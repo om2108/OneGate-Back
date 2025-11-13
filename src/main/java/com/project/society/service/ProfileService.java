@@ -2,28 +2,36 @@ package com.project.society.service;
 
 import com.project.society.model.Profile;
 import com.project.society.repository.ProfileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
 @Service
 public class ProfileService {
-    @Autowired
-    private ProfileRepository repo;
+    private final ProfileRepository repo;
 
-    public Profile getProfile(String userId){
-        return repo.findByUserId(userId).orElseThrow(() -> new RuntimeException("Profile not found"));
+    public ProfileService(ProfileRepository repo) {
+        this.repo = repo;
     }
 
-    public Profile updateProfile(String userId, Profile updated){
-        Profile profile = getProfile(userId);
-        profile.setFullName(updated.getFullName());
-        profile.setPhone(updated.getPhone());
-        profile.setAddress(updated.getAddress());
-        profile.setImage(updated.getImage());
-        profile.setUpdatedAt(LocalDateTime.now());
-        return repo.save(profile);
+    public Profile getProfile(String email) {
+        return repo.findByUserId(email)
+                .orElseGet(() -> {
+                    Profile p = new Profile();
+                    p.setUserId(email);
+                    p.setCreatedAt(LocalDateTime.now());
+                    repo.save(p);
+                    return p;
+                });
+    }
+
+    public Profile updateProfile(String email, Profile profile) {
+        Profile existing = getProfile(email);
+        existing.setFullName(profile.getFullName());
+        existing.setPhone(profile.getPhone());
+        existing.setAddress(profile.getAddress());
+        existing.setImage(profile.getImage());
+        existing.setUpdatedAt(LocalDateTime.now());
+        return repo.save(existing);
     }
 }
-

@@ -20,5 +20,5 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 
-    private Role role; // OWNER, SECRETARY, SOCIETY_MEMBER, WATCHMAN, USER
+    private Role role; // OWNER, SECRETARY, MEMBER, WATCHMAN, USER
 }
