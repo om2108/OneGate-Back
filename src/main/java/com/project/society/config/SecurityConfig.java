@@ -1,58 +1,81 @@
 package com.project.society.config;
 
+import com.project.society.security.JwtAuthenticationFilter;
 import com.project.society.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableMethodSecurity  // Enables @PreAuthorize and @Secured
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final JwtAuthenticationFilter jwtFilter;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, JwtAuthenticationFilter jwtFilter) {
         this.userDetailsService = userDetailsService;
+        this.jwtFilter = jwtFilter;
     }
 
-    // Password encoder bean
+    // ✅ Password Encoder Bean
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager bean
+    // ✅ Authentication Manager Bean
     @Bean
     public AuthenticationManager authManager(PasswordEncoder passwordEncoder) {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-        return new org.springframework.security.authentication.ProviderManager(authProvider);
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return new org.springframework.security.authentication.ProviderManager(provider);
     }
 
-    // Security filter chain (modern Spring Security 6 style)
+    // ✅ Main Security Configuration
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                // 🔒 Disable CSRF for API
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
+
+                // 🔒 Stateless session (JWT-based)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 🔑 Authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/login", "/auth/verify-otp", "/auth/resend-otp").permitAll()
-                        .requestMatchers("/owner/**").hasRole("OWNER")
-                        .requestMatchers("/member/**").hasRole("SOCIETY_MEMBER")
-                        .requestMatchers("/secretary/**").hasRole("SECRETARY")
-                        .requestMatchers("/watchman/**").hasRole("WATCHMAN")
+                        // Public authentication routes
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/verify-otp",
+                                "/auth/resend-otp"
+                        ).permitAll()
+
+                        // 🔓 Allow access to general read endpoints (optional)
+                        .requestMatchers("/api/societies", "/api/societies/**").hasAnyRole("OWNER", "SECRETARY")
+
+                        // ✅ Secure all API endpoints (JWT required)
+                        .requestMatchers("/api/**").authenticated()
+
+                        // Everything else
                         .anyRequest().authenticated()
-                );
+                )
+
+                // 🧩 Add JWT filter before UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
 }
