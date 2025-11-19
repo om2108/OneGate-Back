@@ -14,14 +14,23 @@ public class NoticeController {
     private NoticeService service;
 
     @PostMapping
-    public Notice create(@RequestBody Notice n){ return service.createNotice(n); }
-
-    @GetMapping
-    public List<Notice> get(@RequestParam String societyId, @RequestParam List<String> roles){
-        return service.getNotices(societyId, roles);
+    public Notice create(@RequestBody Notice n){
+        return service.createNotice(n);
     }
 
-    @PutMapping("/{id}") public Notice update(@PathVariable String id,@RequestBody Notice n){ return service.updateNotice(id,n); }
+    // ✅ UPDATED: no query params, matches frontend /api/notices
+    @GetMapping
+    public List<Notice> getAll() {
+        return service.getAllNotices();
+    }
 
-    @DeleteMapping("/{id}") public void delete(@PathVariable String id){ service.deleteNotice(id); }
+    @PutMapping("/{id}")
+    public Notice update(@PathVariable String id, @RequestBody Notice n){
+        return service.updateNotice(id, n);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable String id){
+        service.deleteNotice(id);
+    }
 }

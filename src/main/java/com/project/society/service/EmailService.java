@@ -6,17 +6,29 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
+
     private final JavaMailSender mailSender;
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
-    public void sendOtp(String to, String code) {
+    // ⭐ NEW — send onboarding invite link
+    public void sendInviteLink(String email) {
+        String link = "http://localhost:5173/onboarding?email=" + email;
+
         SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo(to);
-        msg.setSubject("Your OTP Code");
-        msg.setText("Your verification code is: " + code + "\nIt expires in 10 minutes.");
+        msg.setTo(email);
+        msg.setSubject("OneGate Account Invitation");
+
+        msg.setText(
+                "You have been invited to join OneGate.\n\n" +
+                        "Click the link below to complete your account setup:\n" +
+                        link + "\n\n" +
+                        "Set your password and finish onboarding.\n" +
+                        "If you didn't expect this email, you can ignore it."
+        );
+
         mailSender.send(msg);
     }
 }
