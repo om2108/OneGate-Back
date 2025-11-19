@@ -55,4 +55,10 @@ public class AppointmentService {
 
         return repo.save(app);
     }
+    public void deleteAppointment(String id) {
+        if (!repo.existsById(id)) {
+            throw new RuntimeException("Appointment not found");
+        }
+        repo.deleteById(id);
+    }
 }

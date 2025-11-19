@@ -13,12 +13,14 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Document(collection="notifications")
 public class Notification {
+
     @Id
     private String id;
+
     private String message;
     private String targetUserId;
     private String readStatus; // UNREAD, READ
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-

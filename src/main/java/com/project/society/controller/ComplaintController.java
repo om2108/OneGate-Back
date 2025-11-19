@@ -1,3 +1,4 @@
+// src/main/java/com/project/society/controller/ComplaintController.java
 package com.project.society.controller;
 
 import com.project.society.model.Complaint;
@@ -16,20 +17,26 @@ public class ComplaintController {
 
     // Member adds complaint
     @PostMapping
-    public Complaint create(@RequestBody Complaint c){
+    public Complaint create(@RequestBody Complaint c) {
         return service.createComplaint(c);
     }
 
     // Secretary or owner sees all complaints in society
     @GetMapping("/society")
-    public List<Complaint> getBySociety(@RequestParam String societyId){
+    public List<Complaint> getBySociety(@RequestParam String societyId) {
         return service.getComplaintsBySociety(societyId);
     }
 
     // Member sees only their complaints
     @GetMapping("/member")
-    public List<Complaint> getByMember(@RequestParam String userId){
+    public List<Complaint> getByMember(@RequestParam String userId) {
         return service.getComplaintsByMember(userId);
+    }
+
+    // Get complaint by id (for getComplaintById API)
+    @GetMapping("/{id}")
+    public Complaint getOne(@PathVariable String id) {
+        return service.getComplaintById(id);
     }
 
     // Secretary updates status and priority
@@ -37,14 +44,14 @@ public class ComplaintController {
     public Complaint updateStatus(
             @PathVariable String id,
             @RequestParam String status,
-            @RequestParam(required=false) String priority
-    ){
+            @RequestParam(required = false) String priority
+    ) {
         return service.updateComplaintStatus(id, status, priority);
     }
 
     // Delete complaint if resolved
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable String id){
+    public void delete(@PathVariable String id) {
         service.deleteComplaint(id);
     }
 }

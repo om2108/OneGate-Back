@@ -1,3 +1,4 @@
+// src/main/java/com/project/society/controller/AuthController.java
 package com.project.society.controller;
 
 import com.project.society.dto.LoginRequest;
@@ -6,17 +7,22 @@ import com.project.society.model.User;
 import com.project.society.security.JwtProvider;
 import com.project.society.service.OtpService;
 import com.project.society.service.UserService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173") // ✅ allow frontend
+@CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final UserService userService;
@@ -24,17 +30,14 @@ public class AuthController {
     private final JwtProvider jwtProvider;
     private final OtpService otpService;
 
-    public AuthController(UserService userService, AuthenticationManager authManager,
-                          JwtProvider jwtProvider, OtpService otpService) {
-        this.userService = userService;
-        this.authManager = authManager;
-        this.jwtProvider = jwtProvider;
-        this.otpService = otpService;
-    }
-
-    // ✅ 1️⃣ Register user & send OTP
+    // 1) Register user & send OTP
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
+
+        if (userService.findByEmail(req.getEmail()).isPresent()) {
+            return ResponseEntity.status(409).body(Map.of("error", "Email already registered"));
+        }
+
         User user = new User();
         user.setName(req.getName());
         user.setEmail(req.getEmail());
@@ -42,46 +45,74 @@ public class AuthController {
         user.setRole(req.getRole());
         user.setVerified(false);
 
-        userService.register(user);
+        User saved = userService.register(user);
         otpService.generateOtp(req.getEmail());
 
-        return ResponseEntity.ok(Map.of("message", "OTP sent to email"));
+        return ResponseEntity.created(URI.create("/api/users/" + saved.getId()))
+                .body(Map.of(
+                        "message", "OTP sent to email",
+                        "userId", saved.getId()
+                ));
     }
 
-    // ✅ 2️⃣ Verify OTP
+    // 2) Verify OTP
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String code = payload.get("code");
+        if (email == null || code == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "email and code required"));
+        }
 
         boolean verified = otpService.verifyOtp(email, code);
         if (!verified) {
-            return ResponseEntity.status(400).body(Map.of("error", "Invalid or expired OTP"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
         }
 
         userService.markVerified(email);
         return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
     }
 
-    // ✅ 3️⃣ Login
+    // 3) Login
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        Authentication auth = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
 
-        User user = userService.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        var optUser = userService.findByEmail(request.getEmail());
+        if (optUser.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+        }
+        User user = optUser.get();
 
         if (!user.isVerified()) {
-            return ResponseEntity.status(400).body(Map.of("error", "Email not verified"));
+            return ResponseEntity.status(403).body(Map.of("error", "Email not verified"));
         }
 
-        String token = jwtProvider.generateToken(user.getEmail(), user.getRole().name());
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "email", user.getEmail(),
-                "role", user.getRole()
-        ));
+        try {
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+            SecurityContextHolder.getContext().setAuthentication(auth);
+
+            String token = jwtProvider.generateToken(user.getEmail(), user.getRole().name());
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "email", user.getEmail(),
+                    "role", user.getRole().name()
+            ));
+        } catch (Exception ex) {
+            return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
+        }
+    }
+
+    // 4) Me
+    @GetMapping("/me")
+    public ResponseEntity<?> me(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+        }
+        String email = authentication.getName();
+        return userService.findByEmail(email)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(404).body(Map.of("error", "User not found")));
     }
 }

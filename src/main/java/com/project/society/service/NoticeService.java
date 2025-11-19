@@ -19,6 +19,12 @@ public class NoticeService {
         return repo.save(notice);
     }
 
+    // ✅ NEW: used by current frontend /api/notices (no params)
+    public List<Notice> getAllNotices() {
+        return repo.findAll();
+    }
+
+    // existing filtered method (keep it if you’ll use later)
     public List<Notice> getNotices(String societyId, List<String> roles){
         return repo.findBySocietyIdAndTargetRolesIn(societyId, roles);
     }
