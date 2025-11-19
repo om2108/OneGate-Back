@@ -57,14 +57,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public authentication routes
                         .requestMatchers(
-                                "/auth/register",
-                                "/auth/login",
-                                "/auth/verify-otp",
-                                "/auth/resend-otp"
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/verify-otp",
+                                "/api/auth/resend-otp"
                         ).permitAll()
 
                         // 🔓 Allow access to general read endpoints (optional)
-                        .requestMatchers("/api/societies", "/api/societies/**").hasAnyRole("OWNER", "SECRETARY")
+                        .requestMatchers("/api/societies", "/api/societies/**").hasAnyRole("OWNER", "SECRETARY","USER")
 
                         // ✅ Secure all API endpoints (JWT required)
                         .requestMatchers("/api/**").authenticated()

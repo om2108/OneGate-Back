@@ -14,7 +14,8 @@ public class VisitorEntryController {
     private VisitorEntryService service;
 
     @PostMapping
-    public VisitorEntry add(@RequestBody VisitorEntry v){ return service.addVisitor(v); }
+    public VisitorEntry add(@RequestBody VisitorEntry v){
+        return service.addVisitor(v); }
 
     @GetMapping
     public List<VisitorEntry> get(@RequestParam String societyId, @RequestParam List<String> userIds){

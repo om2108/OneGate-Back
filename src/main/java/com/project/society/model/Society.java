@@ -16,6 +16,10 @@ public class Society {
     private String address;
     private String ownerId;
     private List<String> properties;
+
+    private double monthlyMaintenanceFee;
+    private List<String> facilities;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

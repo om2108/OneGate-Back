@@ -1,6 +1,8 @@
 package com.project.society.service;
 
 import com.project.society.model.*;
+import com.project.society.repository.MemberRepository;
+import com.project.society.repository.SocietyRepository;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -17,6 +19,12 @@ public class SocietyService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private SocietyRepository societyRepository;
+
+    @Autowired
+    private MemberRepository memberRepository;
 
     // 1️⃣ Societies owned by a user (Owner)
     public List<Society> getSocietiesByOwner(String ownerId) {
@@ -75,5 +83,36 @@ public class SocietyService {
         SortOperation sort = Aggregation.sort(Sort.by(Sort.Direction.DESC, "createdAt"));
         Aggregation agg = Aggregation.newAggregation(match, sort);
         return mongoTemplate.aggregate(agg, "visitors", VisitorEntry.class).getMappedResults();
+    }
+    // 7️⃣ Maintenance Calculation API (Business Logic)
+    public double calculateMaintenance(String userId) {
+        // 1. Find the user's membership to get the society ID
+        Member member = memberRepository.findByUserId(userId).stream()
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("User is not a member of any society."));
+
+        // 2. Fetch society details to get the base fee (Assumes you added the field to Society.java)
+        Society society = societyRepository.findById(member.getSocietyId())
+                .orElseThrow(() -> new RuntimeException("Society not found."));
+
+        // 3. Calculation Logic (The business logic lives here!)
+        double maintenanceAmount = society.getMonthlyMaintenanceFee();
+
+        // Example: Apply a 10% discount if the member is a SECRETARY
+        if ("SECRETARY".equals(member.getRole())) {
+            maintenanceAmount *= 0.90;
+        }
+
+        return maintenanceAmount;
+    }
+
+    // 8️⃣ Facility Retrieval API (Business Logic)
+    public List<String> getSocietyFacilities(String societyId) {
+        // 1. Fetch society details (Assumes you added the facilities list to Society.java)
+        Society society = societyRepository.findById(societyId)
+                .orElseThrow(() -> new RuntimeException("Society not found."));
+
+        // 2. Return the list, handling a null value gracefully
+        return society.getFacilities() != null ? society.getFacilities() : List.of();
     }
 }

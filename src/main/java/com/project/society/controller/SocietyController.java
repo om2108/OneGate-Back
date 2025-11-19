@@ -2,6 +2,7 @@ package com.project.society.controller;
 
 import com.project.society.model.Society;
 import com.project.society.repository.SocietyRepository;
+import com.project.society.service.SocietyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +14,8 @@ import java.util.List;
 public class SocietyController {
     @Autowired
     private SocietyRepository repo;
+    @Autowired
+    private SocietyService service;
 
     @GetMapping
     public List<Society> getAll(){ return repo.findAll(); }
@@ -30,5 +33,17 @@ public class SocietyController {
         return repo.save(existing);
     }
     @DeleteMapping("/{id}") public void delete(@PathVariable String id){ repo.deleteById(id); }
+
+    // --- NEW API 1: GET MAINTENANCE AMOUNT ---
+    @GetMapping("/maintenance")
+    public double getMaintenance(@RequestParam String userId) {
+        return service.calculateMaintenance(userId);
+    }
+
+    // --- NEW API 2: GET SOCIETY FACILITIES ---
+    @GetMapping("/facilities")
+    public List<String> getFacilities(@RequestParam String societyId) {
+        return service.getSocietyFacilities(societyId);
+    }
 }
 
