@@ -26,6 +26,9 @@ public class Society {
     // still keep list of property ids owned/managed by this society
     private List<String> properties = new ArrayList<>();
 
+    private List<String> facilityIds = new ArrayList<>();
+    private Map<String, Double> baseMaintenanceRates = new HashMap<>();
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
