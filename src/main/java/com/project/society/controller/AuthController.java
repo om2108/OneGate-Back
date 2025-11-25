@@ -5,6 +5,7 @@ import com.project.society.dto.LoginRequest;
 import com.project.society.dto.RegisterRequest;
 import com.project.society.model.User;
 import com.project.society.security.JwtProvider;
+import com.project.society.service.EmailService;
 import com.project.society.service.OtpService;
 import com.project.society.service.UserService;
 import jakarta.validation.Valid;
@@ -29,6 +30,7 @@ public class AuthController {
     private final AuthenticationManager authManager;
     private final JwtProvider jwtProvider;
     private final OtpService otpService;
+    private final EmailService emailService;
 
     // 1) Register user & send OTP
     @PostMapping("/register")
@@ -45,8 +47,19 @@ public class AuthController {
         user.setRole(req.getRole());
         user.setVerified(false);
 
+        // IMPORTANT: make roles list consistent with single role (used by security/userdetails)
+        user.getRoles().clear();
+        if (req.getRole() != null) {
+            user.getRoles().add(req.getRole().name());
+        } else {
+            user.getRoles().add("USER");
+            user.setRole(com.project.society.model.Role.USER);
+        }
+
         User saved = userService.register(user);
-        otpService.generateOtp(req.getEmail());
+
+        // generate and send OTP for verification
+        otpService.generateOtp(saved.getEmail());
 
         return ResponseEntity.created(URI.create("/api/users/" + saved.getId()))
                 .body(Map.of(
@@ -56,10 +69,16 @@ public class AuthController {
     }
 
     // 2) Verify OTP
+    // src/main/java/com/project/society/controller/AuthController.java
+// --- only the verify-otp endpoint replaced/updated ---
+
+    // 2) Verify OTP (now supports different purposes: "verify" | "reset")
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
         String code = payload.get("code");
+        String purpose = payload.get("purpose"); // optional: "reset" when coming from forgot-password
+
         if (email == null || code == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "email and code required"));
         }
@@ -69,11 +88,76 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired OTP"));
         }
 
-        userService.markVerified(email);
-        return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+        // delete token after successful verification (cleanup for both flows)
+        otpService.deleteOtpForEmail(email);
+
+        // If purpose is not "reset", treat as normal email verification and mark user verified
+        if (!"reset".equalsIgnoreCase(purpose)) {
+            userService.markVerified(email);
+            return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+        } else {
+            // For reset purpose, return message indicating verified for reset — frontend should redirect to reset-password
+            return ResponseEntity.ok(Map.of("message", "Code verified for password reset"));
+        }
     }
 
-    // 3) Login
+
+    // Resend OTP
+    @PostMapping("/resend")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "email required"));
+        }
+        var opt = userService.findByEmail(email);
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+        }
+        otpService.generateOtp(email);
+        return ResponseEntity.ok(Map.of("message", "OTP resent to email"));
+    }
+
+    // 3a) Forgot password (send OTP)
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        if (email == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "email required"));
+        }
+        var opt = userService.findByEmail(email);
+        if (opt.isEmpty()) {
+            // do not reveal existence for security — still return success
+            return ResponseEntity.ok(Map.of("message", "If the email exists, a reset code has been sent."));
+        }
+        otpService.generateOtp(email); // reuse OTP collection for reset
+        return ResponseEntity.ok(Map.of("message", "If the email exists, a reset code has been sent."));
+    }
+
+    // 3b) Reset password using OTP
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+        String code = payload.get("code");
+        String newPassword = payload.get("password");
+        if (email == null || code == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "email, code and password required"));
+        }
+
+        boolean ok = otpService.verifyOtp(email, code);
+        if (!ok) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid or expired code"));
+        }
+
+        userService.findByEmail(email).ifPresent(u -> {
+            u.setPassword(userService.encodePassword(newPassword));
+            userService.save(u); // add save helper below if not present
+            otpService.deleteOtpForEmail(email);
+        });
+
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
+    // 4) Login (supports rememberMe)
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
 
@@ -93,18 +177,21 @@ public class AuthController {
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            String token = jwtProvider.generateToken(user.getEmail(), user.getRole().name());
+            // generate token (longer if rememberMe)
+            boolean remember = Boolean.TRUE.equals(request.getRememberMe());
+            String token = jwtProvider.generateToken(user.getEmail(), user.getRole() != null ? user.getRole().name() : user.getRoles().get(0), remember);
+
             return ResponseEntity.ok(Map.of(
                     "token", token,
                     "email", user.getEmail(),
-                    "role", user.getRole().name()
+                    "role", user.getRole() != null ? user.getRole().name() : user.getRoles().get(0)
             ));
         } catch (Exception ex) {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid credentials"));
         }
     }
 
-    // 4) Me
+    // 5) Me
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {

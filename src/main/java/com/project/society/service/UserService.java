@@ -20,6 +20,10 @@ public class UserService {
         if (user.getPassword() != null) {
             user.setPassword(encoder.encode(user.getPassword()));
         }
+        // ensure roles list is populated
+        if ((user.getRoles() == null || user.getRoles().isEmpty()) && user.getRole() != null) {
+            user.getRoles().add(user.getRole().name());
+        }
         return repo.save(user);
     }
 
@@ -40,5 +44,10 @@ public class UserService {
             u.setVerified(true);
             repo.save(u);
         });
+    }
+
+    // helper used by reset-password
+    public User save(User user) {
+        return repo.save(user);
     }
 }

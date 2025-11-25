@@ -31,4 +31,13 @@ public class EmailService {
 
         mailSender.send(msg);
     }
+    // inside EmailService class
+    public void sendOtpCode(String email, String code) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setTo(email);
+        msg.setSubject("OneGate — Your verification code");
+        msg.setText("Your OneGate verification code is: " + code + "\n\nThis code expires in 10 minutes.");
+        mailSender.send(msg);
+    }
+
 }

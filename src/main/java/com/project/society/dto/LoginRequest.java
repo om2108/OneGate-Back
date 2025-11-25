@@ -1,3 +1,4 @@
+// src/main/java/com/project/society/dto/LoginRequest.java
 package com.project.society.dto;
 
 import jakarta.validation.constraints.Email;
@@ -13,4 +14,7 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
+
+    // new: optional remember me flag
+    private Boolean rememberMe = false;
 }
