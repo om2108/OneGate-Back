@@ -1,6 +1,8 @@
 package com.project.society.service;
 
+import com.project.society.dto.MaintenanceResponse;
 import com.project.society.model.*;
+import com.project.society.repository.SocietyRepository;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -11,12 +13,15 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SocietyService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+    @Autowired // <-- ADD THIS
+    private SocietyRepository societyRepository;
 
     // 1️⃣ Societies owned by a user (Owner)
     public List<Society> getSocietiesByOwner(String ownerId) {
@@ -76,4 +81,37 @@ public class SocietyService {
         Aggregation agg = Aggregation.newAggregation(match, sort);
         return mongoTemplate.aggregate(agg, "visitors", VisitorEntry.class).getMappedResults();
     }
+    // 7️⃣ API 1: Get Facilities by Society ID
+    public List<Facility> getFacilitiesBySocietyId(String societyId) {
+        MatchOperation matchSociety = Aggregation.match(Criteria.where("societyId").is(societyId));
+        Aggregation agg = Aggregation.newAggregation(matchSociety);
+
+        return mongoTemplate.aggregate(agg, "facilities", Facility.class).getMappedResults();
+    }
+    // 8️⃣ API 2: Calculate Maintenance (Gives Total Amount)
+    public MaintenanceResponse calculateMaintenance(String societyId, String userId) {
+
+        // 1. Fetch Society's Base Rates
+        Society society = societyRepository.findById(societyId)
+                .orElseThrow(() -> new RuntimeException("Society not found with ID: " + societyId));
+        Map<String, Double> rates = society.getBaseMaintenanceRates();
+
+        // 2. Define rates (using values from Society model or defaults)
+        double baseRate = rates.getOrDefault("base_fee", 2000.0);
+        double ratePerSqft = rates.getOrDefault("rate_per_sqft", 5.50);
+
+        // 3. Mock User/Property Lookup (Placeholder for business logic)
+        double propertyArea = (userId.startsWith("FLAT_A")) ? 1200.0 : 850.0;
+        double outstandingDues = (userId.startsWith("FLAT_B")) ? 350.0 : 0.0;
+
+        // 4. Calculation
+        double areaCharge = propertyArea * ratePerSqft;
+        double totalDue = baseRate + areaCharge + outstandingDues; // Simple calculation
+
+        // 5. Return the DTO with the single total amount
+        return new MaintenanceResponse(
+                societyId, userId, totalDue, java.time.LocalDate.now().plusDays(15)
+        );
+    }
+
 }

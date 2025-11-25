@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -23,5 +24,14 @@ public class Appointment {
     private String location;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private Integer pastNoShowsCount;
+    private Double percentCancellations;
+    private String intent;
+    private String propertyType;
+
+    private Double noShowScore;
+    private Boolean noShowFlag;
+    private Date lastScoredAt;
 }
 
