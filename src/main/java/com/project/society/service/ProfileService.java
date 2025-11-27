@@ -26,12 +26,18 @@ public class ProfileService {
     }
 
     public Profile updateProfile(String email, Profile profile) {
-        Profile existing = getProfile(email);
+        Profile existing = repo.findByUserId(email)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
         existing.setFullName(profile.getFullName());
         existing.setPhone(profile.getPhone());
         existing.setAddress(profile.getAddress());
         existing.setImage(profile.getImage());
+        existing.setAadhaar(profile.getAadhaar());
+        existing.setPan(profile.getPan());
+        existing.setPassportPhoto(profile.getPassportPhoto());
         existing.setUpdatedAt(LocalDateTime.now());
         return repo.save(existing);
     }
+
+
 }
