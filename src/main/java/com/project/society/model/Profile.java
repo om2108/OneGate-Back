@@ -20,6 +20,11 @@ public class Profile {
     private String phone;
     private String address;
     private String image;
+    private String aadhaar;
+    private String pan;
+    private String aadhaarStatus;
+    private String panStatus;
+    private String passportPhoto;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
