@@ -10,4 +10,3 @@ public interface ProfileRepository extends MongoRepository<Profile, String> {
     boolean existsByAadhaar(String aadhaar);
     boolean existsByPan(String pan);
 }
-
