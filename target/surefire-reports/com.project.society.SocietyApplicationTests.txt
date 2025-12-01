@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.project.society.SocietyApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 36.80 s -- in com.project.society.SocietyApplicationTests
