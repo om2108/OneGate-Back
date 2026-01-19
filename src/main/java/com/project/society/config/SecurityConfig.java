@@ -85,10 +85,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
                         // Visitors (Guard, Secretary, Admin)
-                        .requestMatchers(HttpMethod.GET, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
 
                         // Properties: allow anonymous POST recommend endpoint, others guarded
                         .requestMatchers(HttpMethod.POST, "/api/properties/recommend").permitAll()
@@ -105,6 +105,17 @@ public class SecurityConfig {
 
                         // Profile
                         .requestMatchers("/api/profile/**").authenticated()
+
+                        // Events
+                        .requestMatchers(HttpMethod.GET, "/api/events/**")
+                        .hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
+                        .requestMatchers(HttpMethod.POST, "/api/events/**")
+                        .hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/**")
+                        .hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/**")
+                        .hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+
 
                         // Everything else requires authentication
                         .anyRequest().authenticated()
