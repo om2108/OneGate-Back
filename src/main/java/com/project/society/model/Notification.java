@@ -1,8 +1,6 @@
 package com.project.society.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -11,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="notifications")
+@Document(collection = "notifications")
 public class Notification {
 
     @Id
@@ -19,7 +17,7 @@ public class Notification {
 
     private String message;
     private String targetUserId;
-    private String readStatus; // UNREAD, READ
+    private String readStatus; // UNREAD / READ
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

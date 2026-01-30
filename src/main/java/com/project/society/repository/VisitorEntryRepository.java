@@ -6,5 +6,8 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface VisitorEntryRepository extends MongoRepository<VisitorEntry,String> {
+
+    List<VisitorEntry> findBySocietyId(String societyId);
+
     List<VisitorEntry> findBySocietyIdAndNotifiedToIn(String societyId, List<String> userIds);
 }

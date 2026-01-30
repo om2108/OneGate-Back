@@ -7,6 +7,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @NoArgsConstructor
@@ -20,25 +21,25 @@ public class Appointment {
     private String propertyId;
     private String userId;
 
-    private String status;           // REQUESTED, ACCEPTED, DECLINED
+    private String status;
     private String ownerResponse;
 
-    private LocalDateTime dateTime;
+    private LocalDateTime dateTime = LocalDateTime.now();
     private String location;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    // ---------------------------
-    // 🔥 ADD THESE FIELDS (required for scoring)
-    // ---------------------------
+    private Integer pastNoShowsCount = 0;
+    private Double percentCancellations = 0.0;
+    private String intent = "";
+    private String propertyType = "";
+    private Double noShowScore = 0.0;
+    private Boolean noShowFlag = false;
+    private Date lastScoredAt;
 
-    private Integer pastNoShowsCount;        // e.g., how many times user did not show
-    private Double percentCancellations;     // e.g., 0.0 to 1.0
-    private String intent;                   // "rent" or "buy"
-    private String propertyType;             // "studio", "2bhk", etc.
-
-    private Double noShowScore;              // prediction result
-    private Boolean noShowFlag;              // p > threshold?
-    private java.util.Date lastScoredAt;     // when score last calculated
+    // ✅ FIXED
+    public String getTenantId() {
+        return this.userId;
+    }
 }
