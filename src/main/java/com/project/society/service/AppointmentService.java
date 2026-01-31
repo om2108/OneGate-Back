@@ -1,35 +1,29 @@
 package com.project.society.service;
 
 import com.project.society.model.Appointment;
-import com.project.society.model.Notification;
 import com.project.society.model.Property;
 import com.project.society.repository.AppointmentRepository;
-import com.project.society.repository.NotificationRepository;
 import com.project.society.repository.PropertyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class AppointmentService {
 
-    @Autowired
-    private AppointmentRepository repo;
-
-    @Autowired
-    private NotificationRepository notificationRepo;
-
-    @Autowired
-    private PropertyRepository propertyRepository;
+    private final AppointmentRepository repo;
+    private final PropertyRepository propertyRepository;
+    private final NotificationService notificationService;
 
     // ---------------- GET ALL ----------------
     public List<Appointment> getAllAppointments() {
         return repo.findAll();
     }
 
-    // ---------------- REQUEST APPOINTMENT ----------------
+    // ---------------- REQUEST ----------------
     public Appointment requestAppointment(Appointment app) {
 
         Property property = propertyRepository.findById(app.getPropertyId())
@@ -41,51 +35,33 @@ public class AppointmentService {
 
         Appointment saved = repo.save(app);
 
-        String tenantId = saved.getTenantId();
+        String requesterId = saved.getUserId();   // USER / MEMBER
+        String ownerId = property.getOwnerId();   // OWNER
 
-        // 🔥 OWNER FIX
-        String ownerId = property.getOwnerId();
-
-        // fallback hardcoded owner
-        if (ownerId == null || ownerId.isBlank()) {
-            ownerId = "6900e550167823154c5b7492";
-        }
-
-        System.out.println("TENANT ID = " + tenantId);
-        System.out.println("OWNER ID = " + ownerId);
-
-        // ---------------- TENANT NOTIFICATION ----------------
-        if (tenantId != null) {
-            Notification tenantNotif = new Notification(
-                    null,
-                    "✅ Your visit request has been sent successfully.",
-                    tenantId,
-                    "UNREAD",
-                    LocalDateTime.now(),
-                    LocalDateTime.now()
+        // ================= REQUESTER =================
+        if (requesterId != null) {
+            notificationService.create(
+                    requesterId,
+                    "✅ Your visit request has been sent successfully."
             );
-            notificationRepo.save(tenantNotif);
         }
 
-        // ---------------- OWNER NOTIFICATION ----------------
+        // ================= OWNER =================
         if (ownerId != null) {
-            Notification ownerNotif = new Notification(
-                    null,
-                    "📩 New appointment request for property: " + property.getName(),
+            notificationService.create(
                     ownerId,
-                    "UNREAD",
-                    LocalDateTime.now(),
-                    LocalDateTime.now()
+                    "📩 New appointment request for property: " + property.getName()
             );
-            notificationRepo.save(ownerNotif);
         }
 
         return saved;
     }
 
-
     // ---------------- OWNER RESPONSE ----------------
-    public Appointment respondAppointment(String id, boolean accepted, LocalDateTime dateTime, String location) {
+    public Appointment respondAppointment(String id,
+                                          boolean accepted,
+                                          LocalDateTime dateTime,
+                                          String location) {
 
         Appointment app = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
@@ -98,22 +74,32 @@ public class AppointmentService {
 
         Appointment updated = repo.save(app);
 
-        // ✅ FIXED
-        String tenantId = app.getUserId();   // frontend value directly
+        String tenantId = app.getUserId();   // USER / MEMBER
 
+        Property property = propertyRepository
+                .findById(app.getPropertyId())
+                .orElse(null);
+
+        String ownerId = property != null ? property.getOwnerId() : null;
+
+        // ================= TENANT / MEMBER =================
         if (tenantId != null) {
-            Notification responseNotif = new Notification(
-                    null,
-                    accepted
-                            ? "✅ Your appointment has been accepted."
-                            : "❌ Your appointment was declined.",
+            notificationService.create(
                     tenantId,
-                    "UNREAD",
-                    LocalDateTime.now(),
-                    LocalDateTime.now()
+                    accepted
+                            ? "✅ Your appointment was ACCEPTED."
+                            : "❌ Your appointment was DECLINED."
             );
+        }
 
-            notificationRepo.save(responseNotif);
+        // ================= OWNER =================
+        if (ownerId != null) {
+            notificationService.create(
+                    ownerId,
+                    accepted
+                            ? "✅ You accepted an appointment request."
+                            : "❌ You declined an appointment request."
+            );
         }
 
         return updated;
@@ -121,9 +107,7 @@ public class AppointmentService {
 
     // ---------------- DELETE ----------------
     public void deleteAppointment(String id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("Appointment not found");
-        }
         repo.deleteById(id);
     }
 }
+

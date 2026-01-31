@@ -8,44 +8,50 @@ import java.time.LocalDateTime;
 
 @Service
 public class ProfileService {
+
     private final ProfileRepository repo;
 
     public ProfileService(ProfileRepository repo) {
         this.repo = repo;
     }
 
-    public Profile getProfile(String email) {
-        return repo.findByUserId(email)
+    // GET PROFILE (auto-create if missing)
+    public Profile getProfile(String userId) {
+
+        final String uid = userId.trim();   // ✅ make final copy
+
+        return repo.findByUserId(uid)
                 .orElseGet(() -> {
                     Profile p = new Profile();
-                    p.setUserId(email);
+                    p.setUserId(uid);
                     p.setCreatedAt(LocalDateTime.now());
-                    repo.save(p);
-                    return p;
+                    return repo.save(p);
                 });
     }
 
-    public Profile updateProfile(String email, Profile profile) {
-        Profile existing = repo.findByUserId(email)
+    // UPDATE PROFILE
+    public Profile updateProfile(String userId, Profile profile) {
+
+        final String uid = userId.trim();
+
+        Profile existing = repo.findByUserId(uid)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
 
-        if (profile.getAadhaar() != null && !profile.getAadhaar().isEmpty()) {
-            if (existing.getAadhaar() == null || !profile.getAadhaar().equals(existing.getAadhaar())) {
-                if (repo.existsByAadhaar(profile.getAadhaar())) {
-                    throw new RuntimeException("Aadhaar already registered");
-                }
+        // Aadhaar uniqueness
+        if (profile.getAadhaar() != null && !profile.getAadhaar().isBlank()) {
+            if (!profile.getAadhaar().equals(existing.getAadhaar())
+                    && repo.existsByAadhaar(profile.getAadhaar())) {
+                throw new RuntimeException("Aadhaar already registered");
             }
         }
 
-        if (profile.getPan() != null && !profile.getPan().isEmpty()) {
-            if (existing.getPan() == null || !profile.getPan().equals(existing.getPan())) {
-                if (repo.existsByPan(profile.getPan())) {
-                    throw new RuntimeException("PAN already registered");
-                }
+        // PAN uniqueness
+        if (profile.getPan() != null && !profile.getPan().isBlank()) {
+            if (!profile.getPan().equals(existing.getPan())
+                    && repo.existsByPan(profile.getPan())) {
+                throw new RuntimeException("PAN already registered");
             }
         }
-
-
 
         existing.setFullName(profile.getFullName());
         existing.setPhone(profile.getPhone());
@@ -58,7 +64,4 @@ public class ProfileService {
 
         return repo.save(existing);
     }
-
-
-
 }

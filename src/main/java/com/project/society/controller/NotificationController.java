@@ -1,13 +1,12 @@
 package com.project.society.controller;
 
 import com.project.society.model.Notification;
+import com.project.society.model.ReadStatus;
 import com.project.society.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,31 +14,61 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationRepository notificationRepo;
+    private final NotificationRepository notificationRepository;
 
-    // ================= GET MY NOTIFICATIONS =================
-    @GetMapping
-    public List<Notification> getMyNotifications() {
-
-        Authentication auth =
-                SecurityContextHolder.getContext().getAuthentication();
-
-        // 🔥 ALWAYS EMAIL (matches frontend + JWT)
-        String email = auth.getName();
-
-        return notificationRepo.findByTargetUserIdOrderByCreatedAtDesc(email);
+    // JWT stores EMAIL/USERNAME as principal (String)
+    private String getUserId(Authentication authentication) {
+        return authentication.getName();   // ⭐ FIX (NO CAST)
     }
 
-    // ================= MARK AS READ =================
+    // ================= ALL =================
+
+    @GetMapping
+    public List<Notification> all(Authentication authentication) {
+
+        return notificationRepository
+                .findByTargetUserIdOrderByCreatedAtDesc(
+                        getUserId(authentication)
+                );
+    }
+
+    // ================= COUNT =================
+
+    @GetMapping("/count")
+    public long count(Authentication authentication) {
+
+        return notificationRepository.countByTargetUserIdAndReadStatus(
+                getUserId(authentication),
+                ReadStatus.UNREAD
+        );
+    }
+
+    // ================= SINGLE READ =================
+
     @PutMapping("/{id}/read")
-    public Notification markRead(@PathVariable String id) {
+    public void markRead(@PathVariable String id) {
 
-        Notification n = notificationRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notificationRepository.findById(id).ifPresent(n -> {
+            n.setReadStatus(ReadStatus.READ);
+            notificationRepository.save(n);
+        });
+    }
 
-        n.setReadStatus("READ");
-        n.setUpdatedAt(LocalDateTime.now());
+    // ================= ALL READ =================
 
-        return notificationRepo.save(n);
+    @PutMapping("/read-all")
+    public void markAll(Authentication authentication) {
+
+        String userId = getUserId(authentication);
+
+        List<Notification> list =
+                notificationRepository
+                        .findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
+                                userId,
+                                ReadStatus.UNREAD
+                        );
+
+        list.forEach(n -> n.setReadStatus(ReadStatus.READ));
+        notificationRepository.saveAll(list);
     }
 }

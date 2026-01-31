@@ -1,44 +1,79 @@
 package com.project.society.service;
 
+import com.project.society.dto.NotificationDto;
 import com.project.society.model.Notification;
+import com.project.society.model.ReadStatus;
 import com.project.society.repository.NotificationRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository repo;
+    private final NotificationSocketService socket;
 
-    public NotificationService(NotificationRepository repo) {
-        this.repo = repo;
-    }
+    // CREATE + PUSH SOCKET
+    public void create(String userId, String message) {
 
-    // Create notification
-    public Notification createNotification(Notification n) {
-        n.setCreatedAt(LocalDateTime.now());
-        n.setUpdatedAt(LocalDateTime.now());
-        n.setReadStatus("UNREAD");
-        return repo.save(n);
-    }
-
-    // Get UNREAD notifications (latest first)
-    public List<Notification> getNotifications(String userId) {
-        return repo.findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
+        repo.save(new Notification(
+                null,
+                message,
                 userId,
-                "UNREAD"
-        );
+                ReadStatus.UNREAD,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+        ));
+
+        // realtime push
+        socket.push(userId);
     }
 
-    // Mark as read
-    public Notification markAsRead(String id) {
-        Notification n = repo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Notification not found"));
+    public List<NotificationDto> getAll(String userId) {
 
-        n.setReadStatus("READ");
+        return repo.findByTargetUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(n -> new NotificationDto(
+                        n.getId(),
+                        n.getMessage(),
+                        n.getReadStatus().name(),
+                        n.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    public long unreadCount(String userId) {
+        return repo.countByTargetUserIdAndReadStatus(userId, ReadStatus.UNREAD);
+    }
+
+    public void markOne(String id) {
+
+        Notification n = repo.findById(id)
+                .orElseThrow();
+
+        n.setReadStatus(ReadStatus.READ);
         n.setUpdatedAt(LocalDateTime.now());
-        return repo.save(n);
+
+        repo.save(n);
+    }
+
+    public void markAll(String userId) {
+
+        List<Notification> list =
+                repo.findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
+                        userId,
+                        ReadStatus.UNREAD
+                );
+
+        list.forEach(n -> {
+            n.setReadStatus(ReadStatus.READ);
+            n.setUpdatedAt(LocalDateTime.now());
+        });
+
+        repo.saveAll(list);
     }
 }
