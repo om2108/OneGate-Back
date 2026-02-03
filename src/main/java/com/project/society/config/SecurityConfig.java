@@ -83,10 +83,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
                         // Visitors
-                        .requestMatchers(HttpMethod.GET, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**").hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        .requestMatchers(HttpMethod.POST, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
 
                         // Properties
                         .requestMatchers(HttpMethod.POST, "/api/properties/recommend").permitAll()
@@ -110,7 +117,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/profile/**").authenticated()
                         .requestMatchers("/api/no-show/**").authenticated()
-                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/notifications/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER", "USER", "MEMBER")
+
 
                         .anyRequest().authenticated()
                 )

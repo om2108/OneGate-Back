@@ -20,6 +20,8 @@ public class VisitorEntry {
     private String visitorName;
     private String phone;
 
+    private String imageUrl;
+
     private String notifiedTo; // userId
 
     private String status; // PENDING / APPROVED / REJECTED
