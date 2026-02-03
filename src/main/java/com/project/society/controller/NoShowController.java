@@ -21,7 +21,9 @@ public class NoShowController {
 
     @PostMapping("/score/{id}")
     public Appointment scoreAppointment(@PathVariable String id) {
+
         Appointment a = repo.findById(id).orElseThrow();
+
         double p = scoringService.score(a);
 
         a.setNoShowScore(p);
@@ -30,5 +32,6 @@ public class NoShowController {
 
         return repo.save(a);
     }
+
 }
 

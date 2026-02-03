@@ -44,37 +44,35 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http.csrf(csrf -> csrf.disable())
-                .cors(cors -> {})
+                .cors(cors -> {
+                })
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Allow CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Public endpoints
+                        // ⭐⭐⭐ WEBSOCKET FIX
+                        .requestMatchers("/ws/**").permitAll()
+
+                        // Auth / public
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/onboarding").permitAll()
                         .requestMatchers("/api/users/public").permitAll()
                         .requestMatchers("/api/upload/**").permitAll()
 
-                        // User management
+                        // Users
                         .requestMatchers("/api/users/invite").hasRole("OWNER")
                         .requestMatchers("/api/users/**").authenticated()
 
-                        // Societies - allow GET publicly
+                        // Societies
                         .requestMatchers(HttpMethod.GET, "/api/societies/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
                         .requestMatchers(HttpMethod.PUT, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
                         .requestMatchers(HttpMethod.DELETE, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
 
-                        // Appointments
-                        .requestMatchers(HttpMethod.GET, "/api/appointments/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/appointments/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/appointments/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/appointments/**").authenticated()
-
                         // Members
-                        .requestMatchers("/api/members/**").hasAnyRole("SECRETARY", "ADMIN")
+                        .requestMatchers("/api/members/**")
+                        .hasAnyRole("ADMIN", "SECRETARY", "WATCHMAN")
 
                         // Complaints
                         .requestMatchers(HttpMethod.GET, "/api/complaints/society/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
@@ -84,14 +82,22 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
-                        // Visitors (Guard, Secretary, Admin)
-                        .requestMatchers(HttpMethod.GET, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**").hasAnyRole("GUARD", "SECRETARY", "ADMIN")
+                        // Visitors
+                        .requestMatchers(HttpMethod.GET, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
 
-                        // Properties: allow anonymous POST recommend endpoint, others guarded
+                        .requestMatchers(HttpMethod.POST, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                        // Properties
                         .requestMatchers(HttpMethod.POST, "/api/properties/recommend").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/properties/events/property-click").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
                         .requestMatchers(HttpMethod.POST, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
                         .requestMatchers(HttpMethod.PUT, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
@@ -103,10 +109,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/notices/**").hasAnyRole("ADMIN", "SECRETARY", "OWNER")
                         .requestMatchers(HttpMethod.DELETE, "/api/notices/**").hasAnyRole("ADMIN", "SECRETARY", "OWNER")
 
-                        // Profile
-                        .requestMatchers("/api/profile/**").authenticated()
+                        // Events
+                        .requestMatchers(HttpMethod.GET, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
+                        .requestMatchers(HttpMethod.POST, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
 
-                        // Everything else requires authentication
+                        .requestMatchers("/api/profile/**").authenticated()
+                        .requestMatchers("/api/no-show/**").authenticated()
+                        .requestMatchers("/api/notifications/**")
+                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER", "USER", "MEMBER")
+
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

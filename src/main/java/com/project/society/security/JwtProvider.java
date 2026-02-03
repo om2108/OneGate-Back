@@ -27,16 +27,18 @@ public class JwtProvider {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String email, String role) {
-        return generateToken(email, role, false);
+    public String generateToken(String userId, String email, String role) {
+        return generateToken(userId, email, role, false);
     }
 
-    public String generateToken(String email, String role, boolean rememberMe) {
+    public String generateToken(String userId, String email, String role, boolean rememberMe) {
+
         Date now = new Date();
         long expMs = rememberMe ? jwtRememberExpirationMs : jwtExpirationMs;
         Date expiry = new Date(now.getTime() + expMs);
 
         return Jwts.builder()
+                .claim("id", userId)            // ⭐ ADD USER ID
                 .setSubject(email)
                 .claim("role", role)
                 .setIssuedAt(now)

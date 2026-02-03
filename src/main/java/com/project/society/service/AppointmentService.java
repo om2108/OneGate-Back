@@ -1,49 +1,68 @@
 package com.project.society.service;
 
 import com.project.society.model.Appointment;
-import com.project.society.model.Notification;
+import com.project.society.model.Property;
 import com.project.society.repository.AppointmentRepository;
-import com.project.society.repository.NotificationRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.project.society.repository.PropertyRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class AppointmentService {
 
-    @Autowired
-    private AppointmentRepository repo;
+    private final AppointmentRepository repo;
+    private final PropertyRepository propertyRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    private NotificationRepository notificationRepo;
-
-    // ✅ FIXED: use instance, not class name
+    // ---------------- GET ALL ----------------
     public List<Appointment> getAllAppointments() {
         return repo.findAll();
     }
 
+    // ---------------- REQUEST ----------------
     public Appointment requestAppointment(Appointment app) {
+
+        Property property = propertyRepository.findById(app.getPropertyId())
+                .orElseThrow(() -> new RuntimeException("Property not found"));
+
         app.setStatus("REQUESTED");
         app.setCreatedAt(LocalDateTime.now());
         app.setUpdatedAt(LocalDateTime.now());
 
         Appointment saved = repo.save(app);
 
-        // Notify owner (optional, depending on logic)
-        Notification n = new Notification();
-        n.setTargetUserId(app.getPropertyId()); // ownerId should ideally come from property
-        n.setMessage("New appointment request for property " + app.getPropertyId());
-        n.setReadStatus("UNREAD");
-        n.setCreatedAt(LocalDateTime.now());
-        n.setUpdatedAt(LocalDateTime.now());
-        notificationRepo.save(n);
+        String requesterId = saved.getUserId();   // USER / MEMBER
+        String ownerId = property.getOwnerId();   // OWNER
+
+        // ================= REQUESTER =================
+        if (requesterId != null) {
+            notificationService.create(
+                    requesterId,
+                    "✅ Your visit request has been sent successfully."
+            );
+        }
+
+        // ================= OWNER =================
+        if (ownerId != null) {
+            notificationService.create(
+                    ownerId,
+                    "📩 New appointment request for property: " + property.getName()
+            );
+        }
 
         return saved;
     }
 
-    public Appointment respondAppointment(String id, boolean accepted, LocalDateTime dateTime, String location) {
+    // ---------------- OWNER RESPONSE ----------------
+    public Appointment respondAppointment(String id,
+                                          boolean accepted,
+                                          LocalDateTime dateTime,
+                                          String location) {
+
         Appointment app = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
@@ -53,12 +72,42 @@ public class AppointmentService {
         app.setOwnerResponse(accepted ? "Accepted" : "Declined");
         app.setUpdatedAt(LocalDateTime.now());
 
-        return repo.save(app);
-    }
-    public void deleteAppointment(String id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("Appointment not found");
+        Appointment updated = repo.save(app);
+
+        String tenantId = app.getUserId();   // USER / MEMBER
+
+        Property property = propertyRepository
+                .findById(app.getPropertyId())
+                .orElse(null);
+
+        String ownerId = property != null ? property.getOwnerId() : null;
+
+        // ================= TENANT / MEMBER =================
+        if (tenantId != null) {
+            notificationService.create(
+                    tenantId,
+                    accepted
+                            ? "✅ Your appointment was ACCEPTED."
+                            : "❌ Your appointment was DECLINED."
+            );
         }
+
+        // ================= OWNER =================
+        if (ownerId != null) {
+            notificationService.create(
+                    ownerId,
+                    accepted
+                            ? "✅ You accepted an appointment request."
+                            : "❌ You declined an appointment request."
+            );
+        }
+
+        return updated;
+    }
+
+    // ---------------- DELETE ----------------
+    public void deleteAppointment(String id) {
         repo.deleteById(id);
     }
 }
+

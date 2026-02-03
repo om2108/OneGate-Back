@@ -179,7 +179,14 @@ public class AuthController {
 
             // generate token (longer if rememberMe)
             boolean remember = Boolean.TRUE.equals(request.getRememberMe());
-            String token = jwtProvider.generateToken(user.getEmail(), user.getRole() != null ? user.getRole().name() : user.getRoles().get(0), remember);
+            String token = jwtProvider.generateToken(
+                    user.getId(),                                // ⭐ USER ID
+                    user.getEmail(),
+                    user.getRole() != null
+                            ? user.getRole().name()
+                            : user.getRoles().get(0),
+                    remember
+            );
 
             return ResponseEntity.ok(Map.of(
                     "token", token,

@@ -142,4 +142,12 @@ public class UserController {
                 .map(u -> Map.of("id", u.getId(), "email", u.getEmail()))
                 .toList();
     }
+    // 7. Get single user by id (profile)
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable String id) {
+        return repo.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 }

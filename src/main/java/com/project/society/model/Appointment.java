@@ -12,26 +12,34 @@ import java.util.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="appointments")
+@Document(collection = "appointments")
 public class Appointment {
+
     @Id
     private String id;
+
     private String propertyId;
     private String userId;
-    private String status; // REQUESTED, ACCEPTED, DECLINED
+
+    private String status;
     private String ownerResponse;
-    private LocalDateTime dateTime;
+
+    private LocalDateTime dateTime = LocalDateTime.now();
     private String location;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
-    private Integer pastNoShowsCount;
-    private Double percentCancellations;
-    private String intent;
-    private String propertyType;
+    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
-    private Double noShowScore;
-    private Boolean noShowFlag;
+    private Integer pastNoShowsCount = 0;
+    private Double percentCancellations = 0.0;
+    private String intent = "";
+    private String propertyType = "";
+    private Double noShowScore = 0.0;
+    private Boolean noShowFlag = false;
     private Date lastScoredAt;
-}
 
+    // ✅ FIXED
+    public String getTenantId() {
+        return this.userId;
+    }
+}

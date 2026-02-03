@@ -31,16 +31,20 @@ public class Property {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Optional analytics fields used by recommendation heuristics
-    private Integer views;       // number of views / clicks
-    private Double rating;       // optional rating
+    private Integer views;
+    private Double rating;
 
     public String getDescription() {
-        // A simple description fallback
         StringBuilder sb = new StringBuilder();
         if (name != null) sb.append(name);
         if (type != null) sb.append(" - ").append(type);
         if (location != null) sb.append(" (").append(location).append(")");
         return sb.toString();
     }
+
+    // ✅ FIXED
+    public String getOwnerId() {
+        return ownerIds != null && !ownerIds.isEmpty() ? ownerIds.get(0) : null;
+    }
+
 }
