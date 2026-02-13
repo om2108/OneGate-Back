@@ -14,16 +14,19 @@ public class ProfileService {
         this.repo = repo;
     }
 
-    public Profile getProfile(String email) {
-        return repo.findByUserId(email)
-                .orElseGet(() -> {
-                    Profile p = new Profile();
-                    p.setUserId(email);
-                    p.setCreatedAt(LocalDateTime.now());
-                    repo.save(p);
-                    return p;
-                });
+    private boolean isProfileComplete(Profile p) {
+        return p.getFullName() != null && !p.getFullName().isEmpty() &&
+                p.getPhone() != null && !p.getPhone().isEmpty() &&
+                p.getAddress() != null && !p.getAddress().isEmpty() &&
+                p.getImage() != null && !p.getImage().isEmpty() &&
+                p.getAadhaar() != null && !p.getAadhaar().isEmpty() &&
+                p.getPan() != null && !p.getPan().isEmpty() &&
+                p.getPassportPhoto() != null && !p.getPassportPhoto().isEmpty();
     }
+
+
+
+
 
     public Profile updateProfile(String email, Profile profile) {
         Profile existing = repo.findByUserId(email)
@@ -47,16 +50,48 @@ public class ProfileService {
 
 
 
-        existing.setFullName(profile.getFullName());
-        existing.setPhone(profile.getPhone());
-        existing.setAddress(profile.getAddress());
-        existing.setImage(profile.getImage());
-        existing.setAadhaar(profile.getAadhaar());
-        existing.setPan(profile.getPan());
-        existing.setPassportPhoto(profile.getPassportPhoto());
+        if (profile.getFullName() != null)
+            existing.setFullName(profile.getFullName());
+
+        if (profile.getPhone() != null)
+            existing.setPhone(profile.getPhone());
+
+        if (profile.getAddress() != null)
+            existing.setAddress(profile.getAddress());
+
+        if (profile.getImage() != null)
+            existing.setImage(profile.getImage());
+
+        if (profile.getAadhaar() != null)
+            existing.setAadhaar(profile.getAadhaar());
+
+        if (profile.getPan() != null)
+            existing.setPan(profile.getPan());
+
+        if (profile.getPassportPhoto() != null)
+            existing.setPassportPhoto(profile.getPassportPhoto());
+
+        existing.setProfileComplete(isProfileComplete(existing));
         existing.setUpdatedAt(LocalDateTime.now());
 
         return repo.save(existing);
+    }
+
+    public Profile getProfile(String email) {
+
+        Profile profile = repo.findByUserId(email)
+                .orElseGet(() -> {
+                    Profile p = new Profile();
+                    p.setUserId(email);
+                    p.setCreatedAt(LocalDateTime.now());
+                    return repo.save(p);
+                });
+
+
+        boolean complete = isProfileComplete(profile);
+        profile.setProfileComplete(complete);
+
+        return repo.save(profile);
     }
 
 

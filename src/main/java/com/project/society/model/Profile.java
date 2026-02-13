@@ -25,6 +25,10 @@ public class Profile {
     private String aadhaarStatus;
     private String panStatus;
     private String passportPhoto;
+    private boolean profileComplete;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
 }
+
+
