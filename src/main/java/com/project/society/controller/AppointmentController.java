@@ -3,6 +3,8 @@ package com.project.society.controller;
 import com.project.society.model.Appointment;
 import com.project.society.model.User;
 import com.project.society.service.AppointmentService;
+import com.project.society.service.ProfileService;
+import com.project.society.model.Profile;
 import com.project.society.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,6 +26,9 @@ public class AppointmentController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ProfileService profileService;
 
     @GetMapping
     public List<Appointment> getAllAppointments() {
@@ -48,7 +53,8 @@ public class AppointmentController {
                                      Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
+            return ResponseEntity.status(401)
+                    .body(Map.of("error", "Not authenticated"));
         }
 
         String email = authentication.getDetails().toString();
@@ -56,12 +62,21 @@ public class AppointmentController {
         User user = userService.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email " + email));
 
+        // 🔒 PROFILE COMPLETION CHECK
+        Profile profile = profileService.getProfile(email);
+
+        if (!profile.isProfileComplete()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Complete your profile before requesting appointment"));
+        }
+
         // always trust backend, not frontend
         app.setUserId(user.getId());
 
         Appointment saved = service.requestAppointment(app);
         return ResponseEntity.ok(saved);
     }
+
 
     @PutMapping("/{id}/respond")
     public Appointment respond(@PathVariable String id,
