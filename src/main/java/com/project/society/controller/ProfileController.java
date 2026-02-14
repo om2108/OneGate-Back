@@ -20,19 +20,20 @@ public class ProfileController {
 
     @GetMapping
     public Profile getProfile(Authentication authentication) {
-        String email = authentication.getName(); // ✅ email from JWT
-        return service.getProfile(email);
+
+        String userId = authentication.getName(); // JWT userId
+        return service.getProfile(userId);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateProfile(Authentication authentication, @RequestBody Profile profile) {
+    public ResponseEntity<?> updateProfile(Authentication authentication,
+                                           @RequestBody Profile profile) {
         try {
-            String email = authentication.getName();
-            Profile updated = service.updateProfile(email, profile);
+            String userId = authentication.getName();
+            Profile updated = service.updateProfile(userId, profile);
             return ResponseEntity.ok(updated);
         } catch (RuntimeException ex) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+            return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
-
 }

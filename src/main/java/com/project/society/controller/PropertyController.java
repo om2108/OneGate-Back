@@ -3,6 +3,7 @@ package com.project.society.controller;
 import com.project.society.model.Property;
 import com.project.society.service.PropertyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,9 +36,16 @@ public class PropertyController {
     }
 
     @PostMapping
-    public Property add(@RequestBody Property p) {
+    public Property add(@RequestBody Property p, Authentication authentication) {
+
+        String ownerId = authentication.getName(); // Mongo userId from JWT
+
+        // auto assign owner
+        p.getOwnerIds().add(ownerId);
+
         return service.addProperty(p);
     }
+
 
     @PutMapping("/{id}")
     public Property update(@PathVariable String id, @RequestBody Property p) {
@@ -45,9 +53,19 @@ public class PropertyController {
     }
 
     @PutMapping("/{id}/owners")
-    public Property updateOwners(@PathVariable String id, @RequestBody List<String> ownerIds) {
+    public Property updateOwners(@PathVariable String id,
+                                 @RequestBody List<String> ownerIds,
+                                 Authentication authentication) {
+
+        String ownerId = authentication.getName();
+
+        if (!ownerIds.contains(ownerId)) {
+            ownerIds.add(ownerId);
+        }
+
         return service.updateOwners(id, ownerIds);
     }
+
 
     @PutMapping("/{id}/residents")
     public Property updateResidents(@PathVariable String id, @RequestBody List<String> residentIds) {

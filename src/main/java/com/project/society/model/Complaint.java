@@ -1,30 +1,31 @@
 package com.project.society.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="complaints")
+@NoArgsConstructor
+@Document(collection = "complaints")
 public class Complaint {
+
     @Id
     private String id;
 
-    private String description;       // Complaint description
-    private String createdBy;         // User ID of member
-    private String societyId;         // Society ID
-    private String status;            // PENDING, RESOLVED
-    private List<String> assignedTo;  // Secretary or admin assigned
-    private String category;          // e.g., Maintenance, Security, Facilities
-    private String priority;          // LOW, MEDIUM, HIGH
+    private String societyId;
+    private String createdBy;
+
+    private String title;
+    private String description;
+
+    private String category;
+    private String priority; // LOW / MEDIUM / HIGH
+
+    private String status; // PENDING / IN_PROGRESS / RESOLVED
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-

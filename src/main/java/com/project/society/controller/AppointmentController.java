@@ -41,7 +41,7 @@ public class AppointmentController {
             return ResponseEntity.status(401).body(Map.of("error", "Not authenticated"));
         }
 
-        String email = authentication.getName();
+        String email = authentication.getDetails().toString();
 
         return userService.findByEmail(email)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
@@ -57,7 +57,7 @@ public class AppointmentController {
                     .body(Map.of("error", "Not authenticated"));
         }
 
-        String email = authentication.getName();
+        String email = authentication.getDetails().toString();
 
         User user = userService.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found for email " + email));

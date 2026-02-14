@@ -8,48 +8,68 @@ import java.time.LocalDateTime;
 
 @Service
 public class ProfileService {
+
     private final ProfileRepository repo;
 
     public ProfileService(ProfileRepository repo) {
         this.repo = repo;
     }
 
+    // ✅ PROFILE COMPLETION CHECK
     private boolean isProfileComplete(Profile p) {
-        return p.getFullName() != null && !p.getFullName().isEmpty() &&
-                p.getPhone() != null && !p.getPhone().isEmpty() &&
-                p.getAddress() != null && !p.getAddress().isEmpty() &&
-                p.getImage() != null && !p.getImage().isEmpty() &&
-                p.getAadhaar() != null && !p.getAadhaar().isEmpty() &&
-                p.getPan() != null && !p.getPan().isEmpty() &&
-                p.getPassportPhoto() != null && !p.getPassportPhoto().isEmpty();
+        return p.getFullName() != null && !p.getFullName().isBlank() &&
+                p.getPhone() != null && !p.getPhone().isBlank() &&
+                p.getAddress() != null && !p.getAddress().isBlank() &&
+                p.getImage() != null && !p.getImage().isBlank() &&
+                p.getAadhaar() != null && !p.getAadhaar().isBlank() &&
+                p.getPan() != null && !p.getPan().isBlank() &&
+                p.getPassportPhoto() != null && !p.getPassportPhoto().isBlank();
     }
 
+    // ✅ GET PROFILE (auto-create if missing)
+    public Profile getProfile(String userId) {
 
+        final String uid = userId.trim();
 
+        Profile profile = repo.findByUserId(uid)
+                .orElseGet(() -> {
+                    Profile p = new Profile();
+                    p.setUserId(uid);
+                    p.setCreatedAt(LocalDateTime.now());
+                    return repo.save(p);
+                });
 
+        profile.setProfileComplete(isProfileComplete(profile));
+        return repo.save(profile);
+    }
 
-    public Profile updateProfile(String email, Profile profile) {
-        Profile existing = repo.findByUserId(email)
+    // ✅ UPDATE PROFILE (partial update supported)
+    public Profile updateProfile(String userId, Profile profile) {
+
+        final String uid = userId.trim();
+
+        Profile existing = repo.findByUserId(uid)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
 
-        if (profile.getAadhaar() != null && !profile.getAadhaar().isEmpty()) {
-            if (existing.getAadhaar() == null || !profile.getAadhaar().equals(existing.getAadhaar())) {
-                if (repo.existsByAadhaar(profile.getAadhaar())) {
-                    throw new RuntimeException("Aadhaar already registered");
-                }
+        // Aadhaar uniqueness
+        if (profile.getAadhaar() != null && !profile.getAadhaar().isBlank()) {
+            if (!profile.getAadhaar().equals(existing.getAadhaar())
+                    && repo.existsByAadhaar(profile.getAadhaar())) {
+                throw new RuntimeException("Aadhaar already registered");
             }
+            existing.setAadhaar(profile.getAadhaar());
         }
 
-        if (profile.getPan() != null && !profile.getPan().isEmpty()) {
-            if (existing.getPan() == null || !profile.getPan().equals(existing.getPan())) {
-                if (repo.existsByPan(profile.getPan())) {
-                    throw new RuntimeException("PAN already registered");
-                }
+        // PAN uniqueness
+        if (profile.getPan() != null && !profile.getPan().isBlank()) {
+            if (!profile.getPan().equals(existing.getPan())
+                    && repo.existsByPan(profile.getPan())) {
+                throw new RuntimeException("PAN already registered");
             }
+            existing.setPan(profile.getPan());
         }
 
-
-
+        // Partial updates (only if non-null)
         if (profile.getFullName() != null)
             existing.setFullName(profile.getFullName());
 
@@ -62,38 +82,13 @@ public class ProfileService {
         if (profile.getImage() != null)
             existing.setImage(profile.getImage());
 
-        if (profile.getAadhaar() != null)
-            existing.setAadhaar(profile.getAadhaar());
-
-        if (profile.getPan() != null)
-            existing.setPan(profile.getPan());
-
         if (profile.getPassportPhoto() != null)
             existing.setPassportPhoto(profile.getPassportPhoto());
 
+        // Recalculate completion
         existing.setProfileComplete(isProfileComplete(existing));
         existing.setUpdatedAt(LocalDateTime.now());
 
         return repo.save(existing);
     }
-
-    public Profile getProfile(String email) {
-
-        Profile profile = repo.findByUserId(email)
-                .orElseGet(() -> {
-                    Profile p = new Profile();
-                    p.setUserId(email);
-                    p.setCreatedAt(LocalDateTime.now());
-                    return repo.save(p);
-                });
-
-
-        boolean complete = isProfileComplete(profile);
-        profile.setProfileComplete(complete);
-
-        return repo.save(profile);
-    }
-
-
-
 }
