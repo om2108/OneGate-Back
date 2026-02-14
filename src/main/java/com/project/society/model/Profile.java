@@ -11,10 +11,12 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection="profiles")
+@Document(collection = "profiles")
 public class Profile {
+
     @Id
     private String id;
+
     private String userId;
     private String fullName;
     private String phone;
@@ -25,6 +27,9 @@ public class Profile {
     private String aadhaarStatus;
     private String panStatus;
     private String passportPhoto;
+
+    private boolean profileComplete;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
