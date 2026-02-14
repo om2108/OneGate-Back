@@ -15,21 +15,35 @@ public class ProfileService {
         this.repo = repo;
     }
 
-    // GET PROFILE (auto-create if missing)
+    // ✅ PROFILE COMPLETION CHECK
+    private boolean isProfileComplete(Profile p) {
+        return p.getFullName() != null && !p.getFullName().isBlank() &&
+                p.getPhone() != null && !p.getPhone().isBlank() &&
+                p.getAddress() != null && !p.getAddress().isBlank() &&
+                p.getImage() != null && !p.getImage().isBlank() &&
+                p.getAadhaar() != null && !p.getAadhaar().isBlank() &&
+                p.getPan() != null && !p.getPan().isBlank() &&
+                p.getPassportPhoto() != null && !p.getPassportPhoto().isBlank();
+    }
+
+    // ✅ GET PROFILE (auto-create if missing)
     public Profile getProfile(String userId) {
 
-        final String uid = userId.trim();   // ✅ make final copy
+        final String uid = userId.trim();
 
-        return repo.findByUserId(uid)
+        Profile profile = repo.findByUserId(uid)
                 .orElseGet(() -> {
                     Profile p = new Profile();
                     p.setUserId(uid);
                     p.setCreatedAt(LocalDateTime.now());
                     return repo.save(p);
                 });
+
+        profile.setProfileComplete(isProfileComplete(profile));
+        return repo.save(profile);
     }
 
-    // UPDATE PROFILE
+    // ✅ UPDATE PROFILE (partial update supported)
     public Profile updateProfile(String userId, Profile profile) {
 
         final String uid = userId.trim();
@@ -43,6 +57,7 @@ public class ProfileService {
                     && repo.existsByAadhaar(profile.getAadhaar())) {
                 throw new RuntimeException("Aadhaar already registered");
             }
+            existing.setAadhaar(profile.getAadhaar());
         }
 
         // PAN uniqueness
@@ -51,15 +66,27 @@ public class ProfileService {
                     && repo.existsByPan(profile.getPan())) {
                 throw new RuntimeException("PAN already registered");
             }
+            existing.setPan(profile.getPan());
         }
 
-        existing.setFullName(profile.getFullName());
-        existing.setPhone(profile.getPhone());
-        existing.setAddress(profile.getAddress());
-        existing.setImage(profile.getImage());
-        existing.setAadhaar(profile.getAadhaar());
-        existing.setPan(profile.getPan());
-        existing.setPassportPhoto(profile.getPassportPhoto());
+        // Partial updates (only if non-null)
+        if (profile.getFullName() != null)
+            existing.setFullName(profile.getFullName());
+
+        if (profile.getPhone() != null)
+            existing.setPhone(profile.getPhone());
+
+        if (profile.getAddress() != null)
+            existing.setAddress(profile.getAddress());
+
+        if (profile.getImage() != null)
+            existing.setImage(profile.getImage());
+
+        if (profile.getPassportPhoto() != null)
+            existing.setPassportPhoto(profile.getPassportPhoto());
+
+        // Recalculate completion
+        existing.setProfileComplete(isProfileComplete(existing));
         existing.setUpdatedAt(LocalDateTime.now());
 
         return repo.save(existing);
