@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -17,7 +18,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -44,86 +44,105 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) 
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
+        http
+            .csrf(csrf -> csrf.disable())
 
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            // ✅ Proper CORS enable
+            .cors(Customizer.withDefaults())
 
-                        // ⭐⭐⭐ WEBSOCKET FIX
-                        .requestMatchers("/ws/**").permitAll()
+            .sessionManagement(sm ->
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
 
-                        // Auth / public
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/onboarding").permitAll()
-                        .requestMatchers("/api/users/public").permitAll()
-                        .requestMatchers("/api/upload/**").permitAll()
+            .authorizeHttpRequests(auth -> auth
 
-                        // Users
-                        .requestMatchers("/api/users/invite").hasRole("OWNER")
-                        .requestMatchers("/api/users/**").authenticated()
+                // ✅ Always allow preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Societies
-                        .requestMatchers(HttpMethod.GET, "/api/societies/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
-                        .requestMatchers(HttpMethod.PUT, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
+                // ✅ WebSocket
+                .requestMatchers("/ws/**").permitAll()
 
-                        // Members
-                        .requestMatchers("/api/members/**")
-                        .hasAnyRole("ADMIN", "SECRETARY", "WATCHMAN")
+                // ✅ Auth endpoints (IMPORTANT)
+                .requestMatchers("/api/auth/**").permitAll()
 
-                        // Complaints
-                        .requestMatchers(HttpMethod.GET, "/api/complaints/society/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/complaints/member/**").hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/complaints/*").hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/complaints/**").hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/complaints/**").hasAnyRole("SECRETARY", "OWNER", "ADMIN")
+                // ✅ Public endpoints
+                .requestMatchers("/api/users/onboarding").permitAll()
+                .requestMatchers("/api/users/public").permitAll()
+                .requestMatchers("/api/upload/**").permitAll()
 
-                        // Visitors
-                        .requestMatchers(HttpMethod.GET, "/api/visitors/**")
-                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+                // Users
+                .requestMatchers("/api/users/invite").hasRole("OWNER")
+                .requestMatchers("/api/users/**").authenticated()
 
-                        .requestMatchers(HttpMethod.POST, "/api/visitors/**")
-                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+                // Societies
+                .requestMatchers(HttpMethod.GET, "/api/societies/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.PUT, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.DELETE, "/api/societies/**").hasAnyRole("ADMIN", "OWNER")
 
-                        .requestMatchers(HttpMethod.PUT, "/api/visitors/**")
-                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+                // Members
+                .requestMatchers("/api/members/**")
+                .hasAnyRole("ADMIN", "SECRETARY", "WATCHMAN")
 
-                        .requestMatchers(HttpMethod.DELETE, "/api/visitors/**")
-                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+                // Complaints
+                .requestMatchers(HttpMethod.GET, "/api/complaints/society/**")
+                .hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
-                        // Properties
-                        .requestMatchers(HttpMethod.POST, "/api/properties/recommend").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/properties/events/property-click").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
-                        .requestMatchers(HttpMethod.POST, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
-                        .requestMatchers(HttpMethod.PUT, "/api/properties/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
-                        .requestMatchers(HttpMethod.DELETE, "/api/properties/**").hasAnyRole("ADMIN", "OWNER")
+                .requestMatchers(HttpMethod.GET, "/api/complaints/member/**")
+                .hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
 
-                        // Notices
-                        .requestMatchers(HttpMethod.GET, "/api/notices/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
-                        .requestMatchers(HttpMethod.POST, "/api/notices/**").hasAnyRole("ADMIN", "SECRETARY", "OWNER")
-                        .requestMatchers(HttpMethod.PUT, "/api/notices/**").hasAnyRole("ADMIN", "SECRETARY", "OWNER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/notices/**").hasAnyRole("ADMIN", "SECRETARY", "OWNER")
+                .requestMatchers(HttpMethod.GET, "/api/complaints/*")
+                .hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
 
-                        // Events
-                        .requestMatchers(HttpMethod.GET, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
-                        .requestMatchers(HttpMethod.POST, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
-                        .requestMatchers(HttpMethod.PUT, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
-                        .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+                .requestMatchers(HttpMethod.POST, "/api/complaints/**")
+                .hasAnyRole("MEMBER", "USER", "SECRETARY", "OWNER", "ADMIN")
 
-                        .requestMatchers("/api/profile/**").authenticated()
-                        .requestMatchers("/api/no-show/**").authenticated()
-                        .requestMatchers("/api/notifications/**")
-                        .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER", "USER", "MEMBER")
+                .requestMatchers(HttpMethod.PUT, "/api/complaints/**")
+                .hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
+                .requestMatchers(HttpMethod.DELETE, "/api/complaints/**")
+                .hasAnyRole("SECRETARY", "OWNER", "ADMIN")
 
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                // Visitors
+                .requestMatchers("/api/visitors/**")
+                .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER")
+
+                // Properties
+                .requestMatchers(HttpMethod.POST, "/api/properties/recommend").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/properties/events/property-click").authenticated()
+
+                .requestMatchers(HttpMethod.GET, "/api/properties/**")
+                .hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
+
+                .requestMatchers(HttpMethod.POST, "/api/properties/**")
+                .hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+
+                .requestMatchers(HttpMethod.PUT, "/api/properties/**")
+                .hasAnyRole("ADMIN", "OWNER", "SECRETARY")
+
+                .requestMatchers(HttpMethod.DELETE, "/api/properties/**")
+                .hasAnyRole("ADMIN", "OWNER")
+
+                // Notices
+                .requestMatchers("/api/notices/**")
+                .hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
+
+                // Events
+                .requestMatchers("/api/events/**")
+                .hasAnyRole("ADMIN", "OWNER", "SECRETARY", "MEMBER", "WATCHMAN", "USER")
+
+                // Profile
+                .requestMatchers("/api/profile/**").authenticated()
+
+                // Notifications
+                .requestMatchers("/api/notifications/**")
+                .hasAnyRole("WATCHMAN", "SECRETARY", "ADMIN", "OWNER", "USER", "MEMBER")
+
+                .anyRequest().authenticated()
+            )
+
+            // ✅ JWT Filter
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
