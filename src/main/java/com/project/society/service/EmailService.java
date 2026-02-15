@@ -15,7 +15,7 @@ public class EmailService {
 
     // ⭐ NEW — send onboarding invite link
     public void sendInviteLink(String email) {
-        String link = "http://localhost:5173/onboarding?email=" + email;
+        String link = "https://onegate.onrender.com/onboarding?email=" + email;
 
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setTo(email);
