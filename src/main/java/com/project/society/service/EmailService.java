@@ -1,53 +1,43 @@
 package com.project.society.service;
 
-import com.resend.Resend;
-import com.resend.services.emails.model.SendEmailRequest;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
 
-    @Value("${app.email.apikey}")
-    private String apiKey;
+    private final JavaMailSender mailSender;
 
-    @Value("${app.email.from}")
-    private String from;
-
-    private Resend resend;
-
-    @PostConstruct
-    public void init() {
-        resend = new Resend(apiKey);
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
     }
 
-    public void sendOtpCode(String email, String code) {
-
-        SendEmailRequest request = SendEmailRequest.builder()
-                .from(from)
-                .to(email)
-                .subject("OneGate — Your verification code")
-                .html("<h2>Your OTP: <b>" + code + "</b></h2>"
-                        + "<p>This code expires in 10 minutes.</p>")
-                .build();
-
-        resend.emails().send(request);
-    }
-
+    // ⭐ NEW — send onboarding invite link
     public void sendInviteLink(String email) {
+        String link = "http://localhost:5173/onboarding?email=" + email;
 
-        String link = "https://onegate.onrender.com/onboarding?email=" + email;
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setTo(email);
+        msg.setSubject("OneGate Account Invitation");
 
-        SendEmailRequest request = SendEmailRequest.builder()
-                .from(from)
-                .to(email)
-                .subject("OneGate Account Invitation")
-                .html("<h2>You are invited to OneGate 🎉</h2>"
-                        + "<p>Click below:</p>"
-                        + "<a href='" + link + "'>Complete Setup</a>")
-                .build();
+        msg.setText(
+                "You have been invited to join OneGate.\n\n" +
+                        "Click the link below to complete your account setup:\n" +
+                        link + "\n\n" +
+                        "Set your password and finish onboarding.\n" +
+                        "If you didn't expect this email, you can ignore it."
+        );
 
-        resend.emails().send(request);
+        mailSender.send(msg);
     }
+    // inside EmailService class
+    public void sendOtpCode(String email, String code) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setTo(email);
+        msg.setSubject("OneGate — Your verification code");
+        msg.setText("Your OneGate verification code is: " + code + "\n\nThis code expires in 10 minutes.");
+        mailSender.send(msg);
+    }
+
 }
