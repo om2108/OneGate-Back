@@ -36,4 +36,11 @@ public class ProfileController {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
+    @GetMapping("/user/{userId}")
+    public Profile getProfileByUserId(
+            @PathVariable String userId
+    ) {
+
+        return service.getProfileByUserId(userId);
+    }
 }

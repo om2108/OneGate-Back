@@ -7,9 +7,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-@Document(collection = "visitors")
+@AllArgsConstructor
+
+@Document(collection="visitors")
+
 public class VisitorEntry {
 
     @Id
@@ -18,14 +20,33 @@ public class VisitorEntry {
     private String societyId;
 
     private String visitorName;
+
     private String phone;
+
+    private String vehicleNumber;
+
+    private String purpose;
 
     private String imageUrl;
 
-    private String notifiedTo; // userId
+    private String approvalLevel;
 
-    private String status; // PENDING / APPROVED / REJECTED
+    private String secretaryDecision;
+
+    private String memberDecision;
+
+    private String memberId;
+
+    private String status;
+
+    private Boolean imageVerified;
+
+    private LocalDateTime checkIn;
+
+    private LocalDateTime checkOut;
 
     private LocalDateTime createdAt;
+
     private LocalDateTime updatedAt;
+
 }
