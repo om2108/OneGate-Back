@@ -76,4 +76,14 @@ public class PropertyController {
     public void delete(@PathVariable String id) {
         service.deleteProperty(id);
     }
+
+    @PutMapping("/{id}/remove-resident")
+    public Property removeResident(@PathVariable String id, @RequestParam String userId) {
+        return service.removeResident(id, userId);
+    }
+
+    @PutMapping("/{id}/remove-owner")
+    public Property removeOwner(@PathVariable String id, @RequestParam String userId) {
+        return service.removeOwner(id, userId);
+    }
 }
