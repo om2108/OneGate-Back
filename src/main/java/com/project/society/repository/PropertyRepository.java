@@ -10,4 +10,5 @@ public interface PropertyRepository extends MongoRepository<Property, String> {
     List<Property> findByOwnerIdsContaining(String ownerId);
     List<Property> findByResidentIdsContaining(String userId);
 
+
 }

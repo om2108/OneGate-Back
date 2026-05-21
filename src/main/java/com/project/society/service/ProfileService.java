@@ -91,4 +91,9 @@ public class ProfileService {
 
         return repo.save(existing);
     }
+    public Profile getProfileByUserId(String userId) {
+
+        return repo.findByUserId(userId)
+                .orElse(null);
+    }
 }

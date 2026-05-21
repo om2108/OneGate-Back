@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -39,8 +40,13 @@ public class PropertyService {
         existing.setSocietyId(p.getSocietyId());
 
         // keep multi-owner & multi-resident updated
-        existing.setOwnerIds(p.getOwnerIds());
-        existing.setResidentIds(p.getResidentIds());
+        if (p.getOwnerIds() != null) {
+            existing.setOwnerIds(p.getOwnerIds());
+        }
+
+        if (p.getResidentIds() != null) {
+            existing.setResidentIds(p.getResidentIds());
+        }
 
         existing.setUpdatedAt(LocalDateTime.now());
         return repo.save(existing);
@@ -75,15 +81,67 @@ public class PropertyService {
     public Property updateOwners(String propertyId, List<String> ownerIds) {
         Property existing = repo.findById(propertyId)
                 .orElseThrow(() -> new RuntimeException("Property not found: " + propertyId));
-        existing.setOwnerIds(ownerIds);
+
+        List<String> current = existing.getOwnerIds();
+
+        if (current == null) current = new ArrayList<>();
+
+        for (String id : ownerIds) {
+            if (!current.contains(id)) {
+                current.add(id);
+            }
+        }
+
+        existing.setOwnerIds(current);
         existing.setUpdatedAt(LocalDateTime.now());
+
         return repo.save(existing);
     }
 
     public Property updateResidents(String propertyId, List<String> residentIds) {
         Property existing = repo.findById(propertyId)
                 .orElseThrow(() -> new RuntimeException("Property not found: " + propertyId));
-        existing.setResidentIds(residentIds);
+
+        List<String> current = existing.getResidentIds();
+
+        if (current == null) current = new ArrayList<>();
+
+        for (String id : residentIds) {
+            if (!current.contains(id)) {
+                current.add(id);
+            }
+        }
+
+        existing.setResidentIds(current);
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        return repo.save(existing);
+    }
+
+    public Property removeResident(String propertyId, String userId) {
+        Property existing = repo.findById(propertyId)
+                .orElseThrow(() -> new RuntimeException("Property not found"));
+
+        List<String> residents = existing.getResidentIds();
+
+        if (residents != null) {
+            residents.remove(userId);
+        }
+
+        existing.setUpdatedAt(LocalDateTime.now());
+        return repo.save(existing);
+    }
+
+    public Property removeOwner(String propertyId, String userId) {
+        Property existing = repo.findById(propertyId)
+                .orElseThrow(() -> new RuntimeException("Property not found"));
+
+        List<String> owners = existing.getOwnerIds();
+
+        if (owners != null) {
+            owners.remove(userId);
+        }
+
         existing.setUpdatedAt(LocalDateTime.now());
         return repo.save(existing);
     }
