@@ -473,21 +473,27 @@ public class SecurityConfig {
                         )
                         .authenticated()
 
-                        // =====================================
-                        // NOTIFICATIONS
-                        // =====================================
+                                // =====================================
+// NOTIFICATIONS
+// =====================================
 
-                        .requestMatchers(
-                                "/api/notifications/**"
-                        )
-                        .hasAnyRole(
-                                "WATCHMAN",
-                                "SECRETARY",
-                                "ADMIN",
-                                "OWNER",
-                                "USER",
-                                "MEMBER"
-                        )
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/notifications/send"
+                                )
+                                .authenticated()
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/notifications/**"
+                                )
+                                .authenticated()
+
+                                .requestMatchers(
+                                        HttpMethod.PUT,
+                                        "/api/notifications/**"
+                                )
+                                .authenticated()
 
                         // =====================================
                         // ALL OTHER REQUESTS

@@ -7,13 +7,21 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface VisitorEntryRepository
-        extends MongoRepository<VisitorEntry, String>{
+        extends MongoRepository<
+        VisitorEntry,
+        String
+        >{
 
     List<VisitorEntry>
     findBySocietyId(
             String societyId
     );
 
+    List<VisitorEntry>
+    findBySocietyIdAndStatus(
+            String societyId,
+            String status
+    );
 
     List<VisitorEntry>
     findBySocietyIdAndApprovalLevel(
@@ -21,11 +29,16 @@ public interface VisitorEntryRepository
             String approvalLevel
     );
 
+    List<VisitorEntry>
+    findBySocietyIdAndVisitorCategory(
+            String societyId,
+            String visitorCategory
+    );
 
     List<VisitorEntry>
-    findBySocietyIdAndMemberId(
+    findBySocietyIdAndCreatedBy(
             String societyId,
-            String memberId
+            String createdBy
     );
 
 }

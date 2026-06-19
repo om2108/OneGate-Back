@@ -1,7 +1,6 @@
 package com.project.society.service;
 
 import com.project.society.model.VisitorEntry;
-
 import com.project.society.repository.VisitorEntryRepository;
 
 import org.springframework.stereotype.Service;
@@ -11,23 +10,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-
 public class VisitorEntryService {
 
     private final VisitorEntryRepository repo;
 
     public VisitorEntryService(
             VisitorEntryRepository repo
-    ){
-
-        this.repo=repo;
-
+    ) {
+        this.repo = repo;
     }
-
 
     public VisitorEntry addVisitor(
             VisitorEntry v
-    ){
+    ) {
 
         v.setApprovalLevel(
                 "SECRETARY"
@@ -37,16 +32,20 @@ public class VisitorEntryService {
                 "PENDING"
         );
 
-        v.setMemberDecision(
-                "PENDING"
-        );
-
         v.setStatus(
                 "PENDING"
         );
 
         v.setImageVerified(
-                true
+                v.getImageUrl() != null
+        );
+
+        v.setCreatedBy(
+                "WATCHMAN"
+        );
+
+        v.setActive(
+                false
         );
 
         v.setCreatedAt(
@@ -58,147 +57,172 @@ public class VisitorEntryService {
         );
 
         return repo.save(v);
-
     }
 
+    public VisitorEntry createRegularVisitor(
+            VisitorEntry v
+    ) {
+
+        v.setVisitorCategory(
+                "REGULAR"
+        );
+
+        v.setCreatedBy(
+                "SECRETARY"
+        );
+
+        v.setSecretaryDecision(
+                "APPROVED"
+        );
+
+        v.setApprovalLevel(
+                "DONE"
+        );
+
+        v.setStatus(
+                "APPROVED"
+        );
+
+        v.setImageVerified(
+                true
+        );
+
+        v.setActive(
+                true
+        );
+
+        v.setApprovedAt(
+                LocalDateTime.now()
+        );
+
+        v.setCreatedAt(
+                LocalDateTime.now()
+        );
+
+        return repo.save(v);
+    }
 
     public List<VisitorEntry>
     secretaryQueue(
             String societyId
-    ){
+    ) {
 
         return repo
                 .findBySocietyIdAndApprovalLevel(
                         societyId,
                         "SECRETARY"
                 );
-
     }
-
-
-    public List<VisitorEntry>
-    memberQueue(
-            String societyId,
-            String memberId
-    ){
-
-        return repo
-                .findBySocietyIdAndMemberId(
-                        societyId,
-                        memberId
-                );
-
-    }
-
 
     public VisitorEntry approve(
-            String id,
-            String role
-    ){
+            String id
+    ) {
 
         VisitorEntry v =
                 repo
                         .findById(id)
                         .orElseThrow();
 
-        if(
-                "SECRETARY"
-                        .equals(role)
-        ){
-
-            v.setSecretaryDecision(
-                    "APPROVED"
-            );
-
-        }
-
-        if(
-                "MEMBER"
-                        .equals(role)
-        ){
-
-            v.setMemberDecision(
-                    "APPROVED"
-            );
-
-        }
+        v.setSecretaryDecision(
+                "APPROVED"
+        );
 
         v.setStatus(
                 "APPROVED"
         );
 
-        v.setCheckIn(
+        v.setActive(
+                true
+        );
+
+        v.setApprovedAt(
+                LocalDateTime.now()
+        );
+
+        v.setUpdatedAt(
                 LocalDateTime.now()
         );
 
         return repo.save(v);
-
     }
 
     public VisitorEntry reject(
-            String id,
-            String role
-    ){
+            String id
+    ) {
 
         VisitorEntry v =
                 repo
                         .findById(id)
                         .orElseThrow();
 
-        if(
-                "SECRETARY"
-                        .equals(role)
-        ){
-
-            v.setSecretaryDecision(
-                    "REJECTED"
-            );
-
-        }
-
-        if(
-                "MEMBER"
-                        .equals(role)
-        ){
-
-            v.setMemberDecision(
-                    "REJECTED"
-            );
-
-        }
+        v.setSecretaryDecision(
+                "REJECTED"
+        );
 
         v.setStatus(
                 "REJECTED"
         );
 
-        return repo.save(v);
+        v.setActive(
+                false
+        );
 
+        v.setUpdatedAt(
+                LocalDateTime.now()
+        );
+
+        return repo.save(v);
     }
 
-    public VisitorEntry forward(
-            String id,
-            String memberId
-    ){
+    public VisitorEntry checkIn(
+            String id
+    ) {
 
         VisitorEntry v =
                 repo
                         .findById(id)
                         .orElseThrow();
 
-        v.setApprovalLevel(
-                "MEMBER"
+        v.setCheckIn(
+                LocalDateTime.now()
         );
 
-        v.setSecretaryDecision(
-                "FORWARDED"
-        );
-
-        v.setMemberId(
-                memberId
+        v.setLastVisit(
+                LocalDateTime.now()
         );
 
         return repo.save(v);
+    }
 
+    public VisitorEntry checkOut(
+            String id
+    ) {
+
+        VisitorEntry v =
+                repo
+                        .findById(id)
+                        .orElseThrow();
+
+        v.setCheckOut(
+                LocalDateTime.now()
+        );
+
+        v.setStatus(
+                "CHECKED_OUT"
+        );
+
+        return repo.save(v);
+    }
+
+    public List<VisitorEntry>
+    all(
+            String societyId
+    ) {
+
+        return repo
+                .findBySocietyId(
+                        societyId
+                );
     }
 
 }

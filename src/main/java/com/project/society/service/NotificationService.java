@@ -1,13 +1,17 @@
 package com.project.society.service;
 
-import com.project.society.dto.NotificationDto;
 import com.project.society.model.Notification;
+
 import com.project.society.model.ReadStatus;
+
 import com.project.society.repository.NotificationRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+
 import java.util.List;
 
 @Service
@@ -15,65 +19,101 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository repo;
+
     private final NotificationSocketService socket;
 
-    // CREATE + PUSH SOCKET
-    public void create(String userId, String message) {
+    public Notification create(
 
-        repo.save(new Notification(
-                null,
-                message,
-                userId,
-                ReadStatus.UNREAD,
-                LocalDateTime.now(),
-                LocalDateTime.now()
-        ));
+            String userId,
 
-        // realtime push
-        socket.push(userId);
-    }
+            String message
 
-    public List<NotificationDto> getAll(String userId) {
+    ) {
 
-        return repo.findByTargetUserIdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(n -> new NotificationDto(
-                        n.getId(),
-                        n.getMessage(),
-                        n.getReadStatus().name(),
-                        n.getCreatedAt()
-                ))
-                .toList();
-    }
+        Notification n =
 
-    public long unreadCount(String userId) {
-        return repo.countByTargetUserIdAndReadStatus(userId, ReadStatus.UNREAD);
-    }
+                new Notification(
 
-    public void markOne(String id) {
+                        null,
 
-        Notification n = repo.findById(id)
-                .orElseThrow();
+                        message,
 
-        n.setReadStatus(ReadStatus.READ);
-        n.setUpdatedAt(LocalDateTime.now());
-
-        repo.save(n);
-    }
-
-    public void markAll(String userId) {
-
-        List<Notification> list =
-                repo.findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
                         userId,
-                        ReadStatus.UNREAD
+
+                        ReadStatus.UNREAD,
+
+                        LocalDateTime.now(),
+
+                        LocalDateTime.now()
+
                 );
 
-        list.forEach(n -> {
-            n.setReadStatus(ReadStatus.READ);
-            n.setUpdatedAt(LocalDateTime.now());
-        });
+        Notification saved =
 
-        repo.saveAll(list);
+                repo.save(
+                        n
+                );
+
+        socket.push(
+                userId
+        );
+
+        return saved;
+
     }
+
+    public void markOne(
+            String id
+    ) {
+
+        Notification n =
+
+                repo.findById(id)
+
+                        .orElseThrow();
+
+        n.setReadStatus(
+                ReadStatus.READ
+        );
+
+        repo.save(
+                n
+        );
+
+    }
+
+    public void markAll(
+            String userId
+    ) {
+
+        List<Notification> list =
+
+                repo
+
+                        .findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
+
+                                userId,
+
+                                ReadStatus.UNREAD
+
+                        );
+
+        list.forEach(
+
+                n ->
+
+                        n.setReadStatus(
+
+                                ReadStatus.READ
+
+                        )
+
+        );
+
+        repo.saveAll(
+                list
+        );
+
+    }
+
 }

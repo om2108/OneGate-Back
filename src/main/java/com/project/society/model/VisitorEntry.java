@@ -1,6 +1,7 @@
 package com.project.society.model;
 
 import lombok.*;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -29,21 +30,39 @@ public class VisitorEntry {
 
     private String imageUrl;
 
+    private String flatNumber;
+
+    /*
+      NEW
+      REGULAR
+    */
+    private String visitorCategory;
+
+    private String visitorType;
+
+    private String createdBy;
+
     private String approvalLevel;
 
     private String secretaryDecision;
 
-    private String memberDecision;
+    private Boolean notifyResident;
 
-    private String memberId;
+    private String residentId;
 
     private String status;
 
     private Boolean imageVerified;
 
+    private Boolean active;
+
     private LocalDateTime checkIn;
 
     private LocalDateTime checkOut;
+
+    private LocalDateTime approvedAt;
+
+    private LocalDateTime lastVisit;
 
     private LocalDateTime createdAt;
 

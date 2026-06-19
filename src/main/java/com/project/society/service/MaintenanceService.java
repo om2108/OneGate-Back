@@ -45,7 +45,7 @@ public class MaintenanceService {
             String societyId,
 
             String userId
-    ){
+    ) {
 
         List<Maintenance> list =
 
@@ -69,7 +69,7 @@ public class MaintenanceService {
 
     public RazorpayOrderResponse createOrder(
             String maintenanceId
-    ){
+    ) {
 
         try {
 
@@ -102,7 +102,7 @@ public class MaintenanceService {
 
                     "amount",
 
-                    (int)(maintenance.getAmount() * 100)
+                    (int) (maintenance.getAmount() * 100)
             );
 
             options.put(
@@ -129,7 +129,7 @@ public class MaintenanceService {
                     order.get("currency")
             );
 
-        } catch (Exception e){
+        } catch (Exception e) {
 
             throw new RuntimeException(
                     e.getMessage()
@@ -148,7 +148,7 @@ public class MaintenanceService {
             String paymentId,
 
             String signature
-    ){
+    ) {
 
         Maintenance maintenance =
 
@@ -177,7 +177,7 @@ public class MaintenanceService {
 
     private MaintenanceResponse mapToResponse(
             Maintenance m
-    ){
+    ) {
 
         return new MaintenanceResponse(
 
@@ -209,7 +209,7 @@ public class MaintenanceService {
     public List<MaintenanceResponse>
     getBySociety(
             String societyId
-    ){
+    ) {
 
         List<Maintenance> list =
 

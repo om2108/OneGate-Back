@@ -22,26 +22,47 @@ public class VisitorEntryController {
             VisitorEntryService service
     ){
 
-        this.service=
+        this.service =
                 service;
 
     }
 
-
     @PostMapping
+
     public VisitorEntry add(
-            @RequestBody VisitorEntry v
+
+            @RequestBody
+            VisitorEntry visitor
+
     ){
 
         return service
-                .addVisitor(v);
+                .addVisitor(
+                        visitor
+                );
 
     }
 
+    @PostMapping("/regular")
+
+    public VisitorEntry createRegular(
+
+            @RequestBody
+            VisitorEntry visitor
+
+    ){
+
+        return service
+                .createRegularVisitor(
+                        visitor
+                );
+
+    }
 
     @GetMapping("/secretary")
+
     public List<VisitorEntry>
-    secretary(
+    pending(
 
             @RequestParam
             String societyId
@@ -55,77 +76,91 @@ public class VisitorEntryController {
 
     }
 
+    @GetMapping
 
-    @GetMapping("/member")
     public List<VisitorEntry>
-    member(
+    all(
 
             @RequestParam
-            String societyId,
-
-            @RequestParam
-            String memberId
+            String societyId
 
     ){
 
         return service
-                .memberQueue(
-                        societyId,
-                        memberId
+                .all(
+                        societyId
                 );
 
     }
 
+    @PutMapping(
+            "/{id}/approve"
+    )
 
-    @PutMapping("/{id}/approve")
     public VisitorEntry approve(
 
-            @PathVariable String id,
-
-            @RequestParam String role
+            @PathVariable
+            String id
 
     ){
 
         return service
                 .approve(
-                        id,
-                        role
+                        id
                 );
 
     }
 
+    @PutMapping(
+            "/{id}/reject"
+    )
 
-    @PutMapping("/{id}/reject")
     public VisitorEntry reject(
 
-            @PathVariable String id,
-
-            @RequestParam String role
+            @PathVariable
+            String id
 
     ){
 
         return service
                 .reject(
-                        id,
-                        role
+                        id
                 );
 
     }
 
+    @PutMapping(
+            "/{id}/checkin"
+    )
 
-    @PutMapping("/{id}/forward")
-    public VisitorEntry forward(
+    public VisitorEntry checkIn(
 
-            @PathVariable String id,
-
-            @RequestParam String memberId
+            @PathVariable
+            String id
 
     ){
 
         return service
-                .forward(
-                        id,
-                        memberId
+                .checkIn(
+                        id
+                );
+
+    }
+
+    @PutMapping(
+            "/{id}/checkout"
+    )
+
+    public VisitorEntry checkOut(
+
+            @PathVariable
+            String id
+
+    ){
+
+        return service
+                .checkOut(
+                        id
                 );
 
     }

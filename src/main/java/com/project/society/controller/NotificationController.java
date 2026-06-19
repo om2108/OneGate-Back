@@ -10,6 +10,7 @@ import com.project.society.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.core.Authentication;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,127 +20,103 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final NotificationRepository notificationRepository;
+    private final NotificationRepository repo;
 
-    private final NotificationService notificationService;
+    private final NotificationService service;
 
-    // =====================================
-    // GET USER ID
-    // =====================================
-
-    private String getUserId(
-            Authentication authentication
-    ) {
-
-        return authentication.getName();
+    private String uid(
+            Authentication auth
+    ){
+        return auth.getName();
     }
-
-    // =====================================
-    // ALL
-    // =====================================
 
     @GetMapping
     public List<Notification> all(
-            Authentication authentication
-    ) {
+            Authentication auth
+    ){
 
-        return notificationRepository
+        return repo
                 .findByTargetUserIdOrderByCreatedAtDesc(
-                        getUserId(authentication)
+                        uid(auth)
                 );
-    }
 
-    // =====================================
-    // COUNT
-    // =====================================
+    }
 
     @GetMapping("/count")
     public long count(
-            Authentication authentication
-    ) {
+            Authentication auth
+    ){
 
-        return notificationRepository
+        return repo
                 .countByTargetUserIdAndReadStatus(
 
-                        getUserId(authentication),
+                        uid(auth),
 
                         ReadStatus.UNREAD
                 );
+
     }
 
-    // =====================================
-    // SEND
-    // =====================================
+
 
     @PostMapping("/send")
 
-    public void send(
+    public Notification send(
 
-            @RequestParam String userId,
+            @RequestParam(required=false)
+            String userId,
 
-            @RequestParam String message
+            @RequestParam
+            String message,
+
+            Authentication auth
+
     ){
 
-        notificationService.create(
+        String target=
 
-                userId,
+                userId!=null
+
+                        ?
+
+                        userId
+
+                        :
+
+                        auth.getName();
+
+        return service.create(
+
+                target,
 
                 message
-        );
-    }
 
-    // =====================================
-    // SINGLE READ
-    // =====================================
+        );
+
+    }
 
     @PutMapping("/{id}/read")
-    public void markRead(
+    public void read(
             @PathVariable String id
-    ) {
+    ){
 
-        notificationRepository
-                .findById(id)
-
-                .ifPresent(n -> {
-
-                    n.setReadStatus(
-                            ReadStatus.READ
-                    );
-
-                    notificationRepository.save(n);
-                });
-    }
-
-    // =====================================
-    // ALL READ
-    // =====================================
-
-    @PutMapping("/read-all")
-    public void markAll(
-            Authentication authentication
-    ) {
-
-        String userId =
-                getUserId(authentication);
-
-        List<Notification> list =
-
-                notificationRepository
-
-                        .findByTargetUserIdAndReadStatusOrderByCreatedAtDesc(
-
-                                userId,
-
-                                ReadStatus.UNREAD
-                        );
-
-        list.forEach(n ->
-
-                n.setReadStatus(
-                        ReadStatus.READ
-                )
+        service.markOne(
+                id
         );
 
-        notificationRepository.saveAll(list);
     }
+
+    @PutMapping("/read-all")
+    public void allRead(
+            Authentication auth
+    ){
+
+        service.markAll(
+
+                uid(auth)
+
+        );
+
+    }
+
 }
